@@ -66,6 +66,17 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "YouTrade API",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "youtrade-api/get-started/introduction"
+            ]
+          }
+        ]
       }
     ],
     "global": {

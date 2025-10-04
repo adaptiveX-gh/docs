@@ -1,0 +1,347 @@
+---
+title: 'YouTrade API Introduction'
+description: 'Complete guide to the YouTrade API for automated trading strategy development'
+icon: 'rocket'
+---
+
+## What is the YouTrade API?
+
+The **YouTrade API** is a powerful REST API that enables developers to programmatically create, test, and deploy cryptocurrency trading strategies using FreqTrade. Built with AI-powered strategy generation at its core, YouTrade transforms natural language descriptions into production-ready trading bots.
+
+YouTrade bridges the gap between trading ideas and live execution by providing:
+
+- **AI-Powered Strategy Generation**: Describe your trading strategy in plain English, and our Claude-powered engine generates optimized FreqTrade strategy code
+- **Automated Backtesting**: Test strategies against historical market data to validate performance before risking capital
+- **Component Library**: Access a curated marketplace of pre-built indicators, entry/exit signals, and risk management modules
+- **Cloud Deployment**: Deploy strategies to cloud providers (Vultr, DigitalOcean, AWS) with a single API call
+
+<Note>
+**Educational Purpose Only**: YouTrade is designed for educational purposes. Always start with paper trading (dry-run mode) and never risk more than you can afford to lose.
+</Note>
+
+## What Can You Do with the YouTrade API?
+
+### 1. **Create Trading Strategies**
+Generate complete FreqTrade strategies from natural language descriptions:
+
+```bash
+POST /api/v1/strategies/create
+{
+  "name": "RSI Mean Reversion",
+  "description": "Buy when RSI < 30, sell when RSI > 70",
+  "intent": {
+    "pairs": ["BTC/USDT", "ETH/USDT"],
+    "timeframe": "15m",
+    "risk_tolerance": "moderate"
+  }
+}
+```
+
+The API will:
+- Analyze your trading intent using Claude AI
+- Select appropriate technical indicators
+- Generate validated Python strategy code
+- Create a complete FreqTrade configuration
+
+### 2. **Run Backtests**
+Test strategies against historical data to measure performance:
+
+```bash
+POST /api/v1/strategies/{strategyId}/backtest
+{
+  "config": {
+    "days": 90,
+    "stake_amount": 100,
+    "pairs": ["BTC/USDT"]
+  }
+}
+```
+
+Get comprehensive metrics including:
+- Total trades and win rate
+- Sharpe ratio and maximum drawdown
+- Profit/loss analysis
+- Trade-by-trade breakdown
+
+### 3. **Browse Component Library**
+Search and integrate pre-built trading components:
+
+```bash
+GET /api/v1/components/search?q=rsi&category=indicators
+```
+
+Access hundreds of components:
+- **Indicators**: RSI, MACD, Bollinger Bands, custom indicators
+- **Entry Signals**: Pattern recognition, momentum triggers
+- **Exit Signals**: Take-profit, stop-loss strategies
+- **Risk Management**: Position sizing, portfolio allocation
+
+### 4. **Deploy to Cloud**
+Launch your strategy on cloud infrastructure:
+
+```bash
+POST /api/v1/strategies/{strategyId}/deploy
+{
+  "provider": "vultr",
+  "mode": "dry_run",
+  "region": "ewr",
+  "instance_type": "vc2-1c-2gb"
+}
+```
+
+## What Features Exist with the API?
+
+### Core Features
+
+<CardGroup cols={2}>
+  <Card title="Strategy Management" icon="code">
+    - Create, update, and delete strategies
+    - Version control and history tracking
+    - Code validation and linting
+    - Multi-strategy portfolios
+  </Card>
+  
+  <Card title="Backtesting Engine" icon="chart-line">
+    - Historical data testing
+    - Real-time progress streaming (SSE)
+    - Performance metrics calculation
+    - Result caching for efficiency
+  </Card>
+  
+  <Card title="Component Library" icon="puzzle-piece">
+    - 200+ pre-built components
+    - Search and filter capabilities
+    - Rating and download tracking
+    - Custom component uploads
+  </Card>
+  
+  <Card title="Cloud Deployment" icon="cloud">
+    - Multi-cloud support (Vultr, DO, AWS)
+    - Automated provisioning
+    - Health monitoring
+    - Dry-run and live trading modes
+  </Card>
+</CardGroup>
+
+### Advanced Features
+
+- **AI Optimization**: Automatic hyperparameter tuning using Claude
+- **Real-time Monitoring**: WebSocket streams for live strategy performance
+- **Webhook Notifications**: Get alerts for trades, errors, and milestones
+- **Rate Limiting**: Built-in protection with configurable limits
+- **API Authentication**: JWT-based security with role-based access
+
+### Integration Capabilities
+
+| Feature | Description | Endpoint |
+|---------|-------------|----------|
+| **MCP Server** | Model Context Protocol integration for AI tools | Available via Claude Desktop |
+| **CLI Tool** | Command-line interface for automation | Installable via pip |
+| **Python SDK** | Official Python client library | `pip install youtrade-sdk` |
+| **Webhooks** | Receive real-time event notifications | Configure in dashboard |
+
+## How Does Strategy Generation Work Internally?
+
+YouTrade uses a sophisticated multi-stage pipeline to transform your trading ideas into production-ready code:
+
+### Step 1: Intent Analysis 🧠
+
+When you submit a strategy request, Claude AI analyzes your description to extract:
+
+- **Trading pairs** and timeframes
+- **Technical indicators** mentioned or implied
+- **Entry/exit conditions** and logic
+- **Risk parameters** (position sizing, stop-loss)
+- **Trading style** (trend-following, mean reversion, etc.)
+
+```python
+# Example intent extraction
+{
+  "pairs": ["BTC/USDT", "ETH/USDT"],
+  "timeframe": "15m",
+  "indicators_needed": ["rsi", "ema"],
+  "strategy_type": "mean_reversion",
+  "risk_level": "moderate"
+}
+```
+
+### Step 2: Component Selection 🔍
+
+The **Component Library Service** searches for relevant components:
+
+1. **Semantic Search**: Uses embeddings to find components matching your intent
+2. **Compatibility Check**: Ensures components work together
+3. **Ranking**: Prioritizes by popularity, rating, and performance
+4. **Validation**: Verifies code quality and security
+
+```python
+# Selected components example
+components = [
+  ComponentRef(id="adaptive_rsi", type="indicator"),
+  ComponentRef(id="ema_crossover", type="entry_signal"),
+  ComponentRef(id="trailing_stop", type="exit_signal")
+]
+```
+
+### Step 3: Code Generation 💻
+
+The **LLM Code Generator** constructs your strategy:
+
+```python
+# Generation process
+1. Create strategy class skeleton (inherits from IStrategy)
+2. Import selected components
+3. Implement populate_indicators() with chosen indicators
+4. Implement populate_entry_trend() with entry logic
+5. Implement populate_exit_trend() with exit conditions
+6. Add configuration and metadata
+```
+
+Example generated code:
+
+```python
+from freqtrade.strategy import IStrategy
+import talib.abstract as ta
+
+class RSIMeanReversionStrategy(IStrategy):
+    timeframe = '15m'
+    
+    def populate_indicators(self, dataframe, metadata):
+        dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+        dataframe['ema_fast'] = ta.EMA(dataframe, timeperiod=9)
+        dataframe['ema_slow'] = ta.EMA(dataframe, timeperiod=21)
+        return dataframe
+    
+    def populate_entry_trend(self, dataframe, metadata):
+        dataframe.loc[
+            (dataframe['rsi'] < 30) &
+            (dataframe['ema_fast'] > dataframe['ema_slow']),
+            'enter_long'
+        ] = 1
+        return dataframe
+    
+    def populate_exit_trend(self, dataframe, metadata):
+        dataframe.loc[
+            (dataframe['rsi'] > 70),
+            'exit_long'
+        ] = 1
+        return dataframe
+```
+
+### Step 4: Validation & Testing ✅
+
+Before returning the strategy, we validate:
+
+- **Syntax Check**: Python syntax validation
+- **FreqTrade Compatibility**: Ensures IStrategy contract compliance
+- **Security Scan**: Checks for dangerous code patterns
+- **Basic Backtest**: Quick smoke test on recent data
+
+```python
+# Validation pipeline
+validation_results = {
+  "syntax_valid": True,
+  "freqtrade_compatible": True,
+  "security_issues": [],
+  "quick_backtest": {
+    "trades": 45,
+    "win_rate": 0.56,
+    "passed": True
+  }
+}
+```
+
+### Step 5: Result Delivery 📦
+
+The API returns your complete strategy:
+
+```json
+{
+  "strategyId": "uuid-here",
+  "name": "RSI Mean Reversion",
+  "status": "ready",
+  "code": "... generated Python code ...",
+  "config": {
+    "timeframe": "15m",
+    "pairs": ["BTC/USDT", "ETH/USDT"]
+  },
+  "components": [...],
+  "validation": { "passed": true },
+  "filePath": "/strategies/rsi_mean_reversion.py"
+}
+```
+
+### Architecture Flow
+
+<Steps>
+  <Step title="User Request">
+    Submit strategy description via API
+  </Step>
+  <Step title="LLM Analysis">
+    Claude analyzes intent and extracts requirements
+  </Step>
+  <Step title="Component Search">
+    Find and rank relevant components from library
+  </Step>
+  <Step title="Code Synthesis">
+    Generate FreqTrade strategy code
+  </Step>
+  <Step title="Validation">
+    Test syntax, compatibility, and security
+  </Step>
+  <Step title="Storage">
+    Save to database and file system
+  </Step>
+  <Step title="Response">
+    Return complete strategy to user
+  </Step>
+</Steps>
+
+## Getting Started
+
+Ready to build your first trading strategy? Check out these resources:
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="play" href="/quickstart">
+    Create your first strategy in 5 minutes
+  </Card>
+  
+  <Card title="API Reference" icon="book" href="/api-reference/introduction">
+    Complete endpoint documentation
+  </Card>
+  
+  <Card title="Python SDK" icon="python" href="/guides/python-sdk">
+    Use our official Python client
+  </Card>
+  
+  <Card title="Example Strategies" icon="lightbulb" href="/guides/examples">
+    Learn from working examples
+  </Card>
+</CardGroup>
+
+## Rate Limits & Pricing
+
+| Plan | Strategies/Day | Backtests/Day | Components | Price |
+|------|----------------|---------------|------------|-------|
+| **Free** | 10 | 50 | 200+ | $0 |
+| **Pro** | 100 | 500 | 500+ | $29/mo |
+| **Enterprise** | Unlimited | Unlimited | Custom | Contact |
+
+<Warning>
+**Risk Disclaimer**: Cryptocurrency trading carries substantial risk. YouTrade is for educational purposes only. Always use dry-run mode when testing new strategies. Past performance does not guarantee future results.
+</Warning>
+
+## Support & Community
+
+Need help? We're here for you:
+
+- **Documentation**: [https://docs.youtrade.ai](https://docs.youtrade.ai)
+- **Discord Community**: [Join our Discord](https://discord.gg/youtrade)
+- **GitHub Issues**: [Report bugs](https://github.com/youtrade/api/issues)
+- **Email Support**: support@youtrade.ai
+
+---
+
+<Note>
+This API is built on top of [FreqTrade](https://www.freqtrade.io/), the popular open-source cryptocurrency trading bot. All generated strategies are fully compatible with FreqTrade.
+</Note>
