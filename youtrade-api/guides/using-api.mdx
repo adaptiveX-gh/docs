@@ -1,0 +1,514 @@
+---
+title: 'Using YouTrade API'
+description: 'Learn how to authenticate and generate trading strategies using the YouTrade API'
+icon: 'code'
+---
+
+## What Endpoint Do We Use to Generate Strategies?
+
+The primary endpoint for generating trading strategies is:
+
+```
+POST https://api.youtrade.ai/api/v1/strategies/create
+```
+
+This endpoint accepts your trading intent in natural language and returns a complete, production-ready FreqTrade strategy.
+
+### Endpoint Details
+
+| Property | Value |
+|----------|-------|
+| **Method** | `POST` |
+| **URL** | `https://api.youtrade.ai/api/v1/strategies/create` |
+| **Content-Type** | `application/json` |
+| **Authentication** | Bearer Token (JWT) |
+| **Rate Limit** | 10 requests/day (Free), 100/day (Pro) |
+
+### Request Body Schema
+
+```json
+{
+  "name": "string (required)",
+  "description": "string (required)",
+  "intent": {
+    "pairs": ["string"] (required),
+    "timeframe": "string (optional, default: '15m')",
+    "risk_tolerance": "string (optional: 'low' | 'moderate' | 'high')",
+    "strategy_type": "string (optional)",
+    "indicators": ["string"] (optional)
+  }
+}
+```
+
+<Info>
+The more detailed your description, the better the AI can understand your strategy and generate accurate code.
+</Info>
+
+## How Do We Obtain an API Key and Authenticate?
+
+### Step 1: Create an Account
+
+Visit [https://dashboard.youtrade.ai](https://dashboard.youtrade.ai) and sign up for a free account.
+
+### Step 2: Generate an API Key
+
+1. Navigate to **Settings** → **API Keys** in your dashboard
+2. Click **"Create New API Key"**
+3. Give your key a descriptive name (e.g., "Production Bot", "Testing")
+4. Select the appropriate permissions:
+   - `strategies:create` - Create new strategies
+   - `strategies:read` - View your strategies
+   - `backtests:run` - Execute backtests
+   - `deploy:create` - Deploy to cloud
+5. Click **Generate**
+6. **Copy and save your API key immediately** - you won't be able to see it again!
+
+<Warning>
+**Keep your API key secure!** Never commit it to version control or share it publicly. Treat it like a password.
+</Warning>
+
+### Step 3: Authenticate Requests
+
+Include your API key in the `Authorization` header with the `Bearer` scheme:
+
+```bash
+Authorization: Bearer YOUR_API_KEY_HERE
+```
+
+### Authentication Example
+
+```bash
+curl -X POST https://api.youtrade.ai/api/v1/strategies/create \
+  -H "Authorization: Bearer yt_1234567890abcdef" \
+  -H "Content-Type: application/json"
+```
+
+### Best Practices for API Keys
+
+<AccordionGroup>
+  <Accordion title="Use Environment Variables">
+    Store your API key in environment variables instead of hardcoding:
+    
+    ```bash
+    # Linux/Mac
+    export YOUTRADE_API_KEY="yt_your_key_here"
+    
+    # Windows PowerShell
+    $env:YOUTRADE_API_KEY = "yt_your_key_here"
+    ```
+  </Accordion>
+
+  <Accordion title="Rotate Keys Regularly">
+    For production applications, rotate your API keys every 90 days for security.
+  </Accordion>
+
+  <Accordion title="Use Different Keys for Different Environments">
+    Create separate API keys for development, staging, and production environments.
+  </Accordion>
+
+  <Accordion title="Monitor Usage">
+    Check your dashboard regularly to monitor API usage and detect any unusual activity.
+  </Accordion>
+</AccordionGroup>
+
+## Example Code
+
+### Bash (cURL)
+
+Here's a complete example using cURL to create a strategy:
+
+```bash
+#!/bin/bash
+
+# Set your API key (use environment variable in production)
+API_KEY="yt_your_api_key_here"
+BASE_URL="https://api.youtrade.ai"
+
+# Create a new trading strategy
+curl -X POST "$BASE_URL/api/v1/strategies/create" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "RSI Mean Reversion Strategy",
+    "description": "Buy when RSI drops below 30 (oversold), sell when RSI rises above 70 (overbought). Use 15-minute timeframe for quick entries and exits.",
+    "intent": {
+      "pairs": ["BTC/USDT", "ETH/USDT"],
+      "timeframe": "15m",
+      "risk_tolerance": "moderate",
+      "strategy_type": "mean_reversion",
+      "indicators": ["rsi", "ema"]
+    }
+  }' \
+  | jq '.'
+```
+
+### Python
+
+Using the `requests` library for synchronous requests:
+
+```python
+import requests
+import os
+import json
+
+# Configuration
+API_KEY = os.getenv('YOUTRADE_API_KEY')  # Load from environment
+BASE_URL = 'https://api.youtrade.ai'
+
+# Headers
+headers = {
+    'Authorization': f'Bearer {API_KEY}',
+    'Content-Type': 'application/json'
+}
+
+# Request payload
+payload = {
+    'name': 'RSI Mean Reversion Strategy',
+    'description': 'Buy when RSI drops below 30 (oversold), sell when RSI rises above 70 (overbought). Use 15-minute timeframe for quick entries and exits.',
+    'intent': {
+        'pairs': ['BTC/USDT', 'ETH/USDT'],
+        'timeframe': '15m',
+        'risk_tolerance': 'moderate',
+        'strategy_type': 'mean_reversion',
+        'indicators': ['rsi', 'ema']
+    }
+}
+
+# Make the request
+response = requests.post(
+    f'{BASE_URL}/api/v1/strategies/create',
+    headers=headers,
+    json=payload
+)
+
+# Check response
+if response.status_code == 200:
+    strategy = response.json()
+    print(f"✅ Strategy created successfully!")
+    print(f"Strategy ID: {strategy['strategyId']}")
+    print(f"Status: {strategy['status']}")
+    print(f"\nGenerated code preview:")
+    print(strategy['code'][:500] + '...')
+else:
+    print(f"❌ Error: {response.status_code}")
+    print(response.json())
+```
+
+### Python (Async with httpx)
+
+For async applications:
+
+```python
+import httpx
+import asyncio
+import os
+
+async def create_strategy():
+    """Create a trading strategy asynchronously"""
+    
+    API_KEY = os.getenv('YOUTRADE_API_KEY')
+    BASE_URL = 'https://api.youtrade.ai'
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f'{BASE_URL}/api/v1/strategies/create',
+            headers={
+                'Authorization': f'Bearer {API_KEY}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'name': 'RSI Mean Reversion Strategy',
+                'description': 'Buy when RSI drops below 30 (oversold), sell when RSI rises above 70 (overbought). Use 15-minute timeframe for quick entries and exits.',
+                'intent': {
+                    'pairs': ['BTC/USDT', 'ETH/USDT'],
+                    'timeframe': '15m',
+                    'risk_tolerance': 'moderate',
+                    'strategy_type': 'mean_reversion',
+                    'indicators': ['rsi', 'ema']
+                }
+            }
+        )
+        
+        if response.status_code == 200:
+            strategy = response.json()
+            print(f"✅ Strategy created: {strategy['strategyId']}")
+            return strategy
+        else:
+            raise Exception(f"API Error: {response.status_code} - {response.text}")
+
+# Run the async function
+if __name__ == '__main__':
+    asyncio.run(create_strategy())
+```
+
+### JavaScript (Node.js)
+
+Using the Fetch API (Node.js 18+):
+
+```javascript
+// Load API key from environment
+const API_KEY = process.env.YOUTRADE_API_KEY;
+const BASE_URL = 'https://api.youtrade.ai';
+
+async function createStrategy() {
+  try {
+    const response = await fetch(`${BASE_URL}/api/v1/strategies/create`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: 'RSI Mean Reversion Strategy',
+        description: 'Buy when RSI drops below 30 (oversold), sell when RSI rises above 70 (overbought). Use 15-minute timeframe for quick entries and exits.',
+        intent: {
+          pairs: ['BTC/USDT', 'ETH/USDT'],
+          timeframe: '15m',
+          risk_tolerance: 'moderate',
+          strategy_type: 'mean_reversion',
+          indicators: ['rsi', 'ema']
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const strategy = await response.json();
+    
+    console.log('✅ Strategy created successfully!');
+    console.log(`Strategy ID: ${strategy.strategyId}`);
+    console.log(`Status: ${strategy.status}`);
+    console.log(`\nGenerated code preview:`);
+    console.log(strategy.code.substring(0, 500) + '...');
+    
+    return strategy;
+    
+  } catch (error) {
+    console.error('❌ Error creating strategy:', error);
+    throw error;
+  }
+}
+
+// Execute
+createStrategy();
+```
+
+### JavaScript (Using Axios)
+
+If you prefer Axios:
+
+```javascript
+const axios = require('axios');
+require('dotenv').config(); // Load .env file
+
+const API_KEY = process.env.YOUTRADE_API_KEY;
+const BASE_URL = 'https://api.youtrade.ai';
+
+const createStrategy = async () => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/v1/strategies/create`,
+      {
+        name: 'RSI Mean Reversion Strategy',
+        description: 'Buy when RSI drops below 30 (oversold), sell when RSI rises above 70 (overbought). Use 15-minute timeframe for quick entries and exits.',
+        intent: {
+          pairs: ['BTC/USDT', 'ETH/USDT'],
+          timeframe: '15m',
+          risk_tolerance: 'moderate',
+          strategy_type: 'mean_reversion',
+          indicators: ['rsi', 'ema']
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log('✅ Strategy created successfully!');
+    console.log('Strategy ID:', response.data.strategyId);
+    console.log('Status:', response.data.status);
+    
+    return response.data;
+    
+  } catch (error) {
+    if (error.response) {
+      // Server responded with error
+      console.error('❌ API Error:', error.response.status);
+      console.error('Message:', error.response.data);
+    } else {
+      // Network or other error
+      console.error('❌ Error:', error.message);
+    }
+    throw error;
+  }
+};
+
+createStrategy();
+```
+
+## Example Response
+
+When you successfully create a strategy, you'll receive a comprehensive response with all the details:
+
+### Success Response (200 OK)
+
+```json
+{
+  "strategyId": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "RSI Mean Reversion Strategy",
+  "description": "Buy when RSI drops below 30 (oversold), sell when RSI rises above 70 (overbought). Use 15-minute timeframe for quick entries and exits.",
+  "status": "ready",
+  "createdAt": "2025-10-04T14:32:18.123Z",
+  "updatedAt": "2025-10-04T14:32:18.123Z",
+  "config": {
+    "timeframe": "15m",
+    "pairs": ["BTC/USDT", "ETH/USDT"],
+    "stake_amount": 100,
+    "max_open_trades": 3
+  },
+  "components": [
+    {
+      "id": "adaptive_rsi",
+      "name": "Adaptive RSI Indicator",
+      "type": "indicator",
+      "category": "momentum"
+    },
+    {
+      "id": "ema_crossover",
+      "name": "EMA Crossover Signal",
+      "type": "entry_signal",
+      "category": "trend"
+    },
+    {
+      "id": "rsi_exit",
+      "name": "RSI Overbought Exit",
+      "type": "exit_signal",
+      "category": "momentum"
+    }
+  ],
+  "code": "from freqtrade.strategy import IStrategy\nimport talib.abstract as ta\nfrom pandas import DataFrame\n\n\nclass RSIMeanReversionStrategy(IStrategy):\n    \"\"\"\n    RSI Mean Reversion Strategy\n    \n    Buy when RSI drops below 30 (oversold), sell when RSI rises \n    above 70 (overbought). Use 15-minute timeframe for quick \n    entries and exits.\n    \"\"\"\n    \n    # Strategy configuration\n    timeframe = '15m'\n    \n    # ROI table\n    minimal_roi = {\n        \"0\": 0.15,\n        \"30\": 0.10,\n        \"60\": 0.05,\n        \"120\": 0.01\n    }\n    \n    # Stoploss\n    stoploss = -0.10\n    \n    # Trailing stop\n    trailing_stop = True\n    trailing_stop_positive = 0.01\n    trailing_stop_positive_offset = 0.02\n    \n    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:\n        \"\"\"\n        Add technical indicators to the dataframe\n        \"\"\"\n        # RSI\n        dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)\n        \n        # EMAs for trend confirmation\n        dataframe['ema_fast'] = ta.EMA(dataframe, timeperiod=9)\n        dataframe['ema_slow'] = ta.EMA(dataframe, timeperiod=21)\n        \n        # Volume\n        dataframe['volume_mean'] = dataframe['volume'].rolling(window=20).mean()\n        \n        return dataframe\n    \n    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:\n        \"\"\"\n        Define entry conditions\n        \"\"\"\n        dataframe.loc[\n            (\n                # RSI oversold\n                (dataframe['rsi'] < 30) &\n                \n                # Bullish trend confirmation\n                (dataframe['ema_fast'] > dataframe['ema_slow']) &\n                \n                # Volume check\n                (dataframe['volume'] > dataframe['volume_mean']) &\n                \n                # Volume is positive\n                (dataframe['volume'] > 0)\n            ),\n            'enter_long'\n        ] = 1\n        \n        return dataframe\n    \n    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:\n        \"\"\"\n        Define exit conditions\n        \"\"\"\n        dataframe.loc[\n            (\n                # RSI overbought\n                (dataframe['rsi'] > 70)\n            ),\n            'exit_long'\n        ] = 1\n        \n        return dataframe",
+  "filePath": "/strategies/rsi_mean_reversion_strategy.py",
+  "validation": {
+    "passed": true,
+    "syntax_valid": true,
+    "freqtrade_compatible": true,
+    "security_issues": [],
+    "warnings": []
+  },
+  "metadata": {
+    "generatedBy": "claude-sonnet-4.5",
+    "generationTime": 4.52,
+    "componentsUsed": 3,
+    "codeLines": 87
+  }
+}
+```
+
+### Response Field Descriptions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `strategyId` | UUID | Unique identifier for the strategy |
+| `name` | string | Name of the strategy |
+| `description` | string | Your original description |
+| `status` | string | Strategy status: `generating`, `ready`, `failed` |
+| `createdAt` | ISO-8601 | When the strategy was created |
+| `updatedAt` | ISO-8601 | Last modification time |
+| `config` | object | FreqTrade configuration settings |
+| `components` | array | List of components used in the strategy |
+| `code` | string | Complete Python strategy code |
+| `filePath` | string | Where the strategy file is saved |
+| `validation` | object | Validation results |
+| `metadata` | object | Generation metadata |
+
+### Error Responses
+
+<Tabs>
+  <Tab title="401 Unauthorized">
+    ```json
+    {
+      "error": "unauthorized",
+      "message": "Invalid or missing API key",
+      "statusCode": 401
+    }
+    ```
+    
+    **Solution**: Check that your API key is correct and included in the Authorization header.
+  </Tab>
+
+  <Tab title="400 Bad Request">
+    ```json
+    {
+      "error": "validation_error",
+      "message": "Invalid request body",
+      "details": [
+        {
+          "field": "intent.pairs",
+          "message": "At least one trading pair is required"
+        }
+      ],
+      "statusCode": 400
+    }
+    ```
+    
+    **Solution**: Verify your request body matches the required schema.
+  </Tab>
+
+  <Tab title="429 Rate Limit">
+    ```json
+    {
+      "error": "rate_limit_exceeded",
+      "message": "You have exceeded your daily strategy creation limit",
+      "limit": 10,
+      "resetAt": "2025-10-05T00:00:00Z",
+      "statusCode": 429
+    }
+    ```
+    
+    **Solution**: Wait until the reset time or upgrade your plan.
+  </Tab>
+
+  <Tab title="500 Internal Error">
+    ```json
+    {
+      "error": "internal_error",
+      "message": "An unexpected error occurred during strategy generation",
+      "requestId": "req_abc123xyz",
+      "statusCode": 500
+    }
+    ```
+    
+    **Solution**: Contact support with the requestId for assistance.
+  </Tab>
+</Tabs>
+
+## Next Steps
+
+Now that you know how to create strategies, explore these resources:
+
+<CardGroup cols={2}>
+  <Card title="Run Backtests" icon="chart-line" href="/youtrade-api/guides/backtesting">
+    Test your strategy against historical data
+  </Card>
+  
+  <Card title="Deploy to Cloud" icon="cloud" href="/youtrade-api/guides/deployment">
+    Launch your strategy on cloud infrastructure
+  </Card>
+  
+  <Card title="API Reference" icon="book" href="/api-reference/introduction">
+    Explore all available endpoints
+  </Card>
+  
+  <Card title="Component Library" icon="puzzle-piece" href="/youtrade-api/guides/components">
+    Browse pre-built trading components
+  </Card>
+</CardGroup>
+
+<Note>
+**Pro Tip**: Save the `strategyId` from the response - you'll need it to run backtests, view results, and deploy your strategy!
+</Note>
