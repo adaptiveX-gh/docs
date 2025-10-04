@@ -1,0 +1,890 @@
+---
+title: 'Create Strategy from Existing One'
+description: 'Learn how to clone, modify, and evolve your trading strategies'
+icon: 'copy'
+---
+
+## Overview
+
+Building on successful strategies is faster than starting from scratch. YouTrade API provides several ways to create new strategies based on existing ones, allowing you to:
+
+- **Clone and tweak** a working strategy for different market conditions
+- **Iterate rapidly** on proven concepts
+- **A/B test variations** of the same core strategy
+- **Adapt strategies** to different trading pairs or timeframes
+
+<Info>
+This approach saves time and leverages the AI's understanding of your original strategy to make intelligent modifications.
+</Info>
+
+## Methods for Creating Derivative Strategies
+
+### Method 1: Clone and Modify Endpoint
+
+The most straightforward approach is using the clone endpoint:
+
+```
+POST https://api.youtrade.ai/api/v1/strategies/{strategyId}/clone
+```
+
+This creates an exact copy that you can then modify through subsequent API calls.
+
+### Method 2: Create with Reference
+
+Generate a new strategy while referencing an existing one:
+
+```
+POST https://api.youtrade.ai/api/v1/strategies/create
+```
+
+Include the `baseStrategyId` in your request to tell the AI to use an existing strategy as a starting point.
+
+### Method 3: Variation Generation
+
+Let the AI automatically create variations:
+
+```
+POST https://api.youtrade.ai/api/v1/strategies/{strategyId}/variations
+```
+
+Generate multiple variations with different parameters automatically.
+
+## Step-by-Step: Clone and Modify
+
+### Step 1: Find Your Base Strategy
+
+First, get the ID of the strategy you want to clone:
+
+<CodeGroup>
+
+```bash Bash
+# List all your strategies
+curl -X GET https://api.youtrade.ai/api/v1/strategies \
+  -H "Authorization: Bearer $YOUTRADE_API_KEY" \
+  | jq '.strategies[] | {id, name, winRate: .metrics.win_rate}'
+```
+
+```python Python
+import requests
+import os
+
+API_KEY = os.getenv('YOUTRADE_API_KEY')
+headers = {'Authorization': f'Bearer {API_KEY}'}
+
+# Get all strategies
+response = requests.get(
+    'https://api.youtrade.ai/api/v1/strategies',
+    headers=headers
+)
+
+strategies = response.json()['strategies']
+
+# Display strategies
+for strategy in strategies:
+    print(f"ID: {strategy['id']}")
+    print(f"Name: {strategy['name']}")
+    print(f"Win Rate: {strategy['metrics']['win_rate']:.1%}\n")
+```
+
+```javascript JavaScript
+const API_KEY = process.env.YOUTRADE_API_KEY;
+
+async function listStrategies() {
+  const response = await fetch(
+    'https://api.youtrade.ai/api/v1/strategies',
+    {
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`
+      }
+    }
+  );
+  
+  const data = await response.json();
+  
+  data.strategies.forEach(strategy => {
+    console.log(`ID: ${strategy.id}`);
+    console.log(`Name: ${strategy.name}`);
+    console.log(`Win Rate: ${(strategy.metrics.win_rate * 100).toFixed(1)}%\n`);
+  });
+  
+  return data.strategies;
+}
+
+listStrategies();
+```
+
+</CodeGroup>
+
+### Step 2: Clone the Strategy
+
+Create a copy of your chosen strategy:
+
+<CodeGroup>
+
+```bash Bash
+STRATEGY_ID="550e8400-e29b-41d4-a716-446655440000"
+
+curl -X POST "https://api.youtrade.ai/api/v1/strategies/$STRATEGY_ID/clone" \
+  -H "Authorization: Bearer $YOUTRADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "RSI Mean Reversion - ETH Optimized",
+    "modifications": {
+      "description": "Optimized version for ETH with tighter RSI thresholds",
+      "intent": {
+        "pairs": ["ETH/USDT"],
+        "timeframe": "5m"
+      }
+    }
+  }' | jq '.'
+```
+
+```python Python
+import requests
+import os
+
+API_KEY = os.getenv('YOUTRADE_API_KEY')
+BASE_URL = 'https://api.youtrade.ai'
+STRATEGY_ID = '550e8400-e29b-41d4-a716-446655440000'
+
+# Clone with modifications
+response = requests.post(
+    f'{BASE_URL}/api/v1/strategies/{STRATEGY_ID}/clone',
+    headers={
+        'Authorization': f'Bearer {API_KEY}',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'name': 'RSI Mean Reversion - ETH Optimized',
+        'modifications': {
+            'description': 'Optimized version for ETH with tighter RSI thresholds',
+            'intent': {
+                'pairs': ['ETH/USDT'],
+                'timeframe': '5m'
+            }
+        }
+    }
+)
+
+if response.status_code == 200:
+    cloned_strategy = response.json()
+    print(f"✅ Cloned strategy created!")
+    print(f"New Strategy ID: {cloned_strategy['strategyId']}")
+    print(f"Status: {cloned_strategy['status']}")
+else:
+    print(f"❌ Error: {response.status_code}")
+    print(response.json())
+```
+
+```javascript JavaScript
+const API_KEY = process.env.YOUTRADE_API_KEY;
+const STRATEGY_ID = '550e8400-e29b-41d4-a716-446655440000';
+
+async function cloneStrategy() {
+  const response = await fetch(
+    `https://api.youtrade.ai/api/v1/strategies/${STRATEGY_ID}/clone`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: 'RSI Mean Reversion - ETH Optimized',
+        modifications: {
+          description: 'Optimized version for ETH with tighter RSI thresholds',
+          intent: {
+            pairs: ['ETH/USDT'],
+            timeframe: '5m'
+          }
+        }
+      })
+    }
+  );
+  
+  const clonedStrategy = await response.json();
+  
+  console.log('✅ Cloned strategy created!');
+  console.log(`New Strategy ID: ${clonedStrategy.strategyId}`);
+  console.log(`Status: ${clonedStrategy.status}`);
+  
+  return clonedStrategy;
+}
+
+cloneStrategy();
+```
+
+</CodeGroup>
+
+### Step 3: Fine-Tune Parameters (Optional)
+
+Make specific adjustments to the cloned strategy:
+
+<CodeGroup>
+
+```bash Bash
+NEW_STRATEGY_ID="<cloned-strategy-id>"
+
+curl -X PATCH "https://api.youtrade.ai/api/v1/strategies/$NEW_STRATEGY_ID" \
+  -H "Authorization: Bearer $YOUTRADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parameters": {
+      "rsi_period": 10,
+      "rsi_buy_threshold": 25,
+      "rsi_sell_threshold": 75,
+      "stop_loss": -0.08
+    }
+  }'
+```
+
+```python Python
+NEW_STRATEGY_ID = cloned_strategy['strategyId']
+
+# Update parameters
+response = requests.patch(
+    f'{BASE_URL}/api/v1/strategies/{NEW_STRATEGY_ID}',
+    headers={
+        'Authorization': f'Bearer {API_KEY}',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'parameters': {
+            'rsi_period': 10,
+            'rsi_buy_threshold': 25,
+            'rsi_sell_threshold': 75,
+            'stop_loss': -0.08
+        }
+    }
+)
+
+updated_strategy = response.json()
+print(f"✅ Strategy parameters updated")
+```
+
+```javascript JavaScript
+async function updateParameters(strategyId) {
+  const response = await fetch(
+    `https://api.youtrade.ai/api/v1/strategies/${strategyId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        parameters: {
+          rsi_period: 10,
+          rsi_buy_threshold: 25,
+          rsi_sell_threshold: 75,
+          stop_loss: -0.08
+        }
+      })
+    }
+  );
+  
+  const updatedStrategy = await response.json();
+  console.log('✅ Strategy parameters updated');
+  return updatedStrategy;
+}
+```
+
+</CodeGroup>
+
+## Create with AI-Assisted Modifications
+
+Use the AI to intelligently modify an existing strategy based on natural language instructions:
+
+<CodeGroup>
+
+```bash Bash
+BASE_STRATEGY_ID="550e8400-e29b-41d4-a716-446655440000"
+
+curl -X POST https://api.youtrade.ai/api/v1/strategies/create \
+  -H "Authorization: Bearer $YOUTRADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "RSI Mean Reversion - Conservative",
+    "baseStrategyId": "'$BASE_STRATEGY_ID'",
+    "description": "Take the existing RSI strategy but make it more conservative: tighter stop losses at 5%, require volume confirmation, and only trade BTC during high volume periods",
+    "intent": {
+      "pairs": ["BTC/USDT"],
+      "timeframe": "15m",
+      "risk_tolerance": "low"
+    }
+  }'
+```
+
+```python Python
+import requests
+import os
+
+API_KEY = os.getenv('YOUTRADE_API_KEY')
+BASE_STRATEGY_ID = '550e8400-e29b-41d4-a716-446655440000'
+
+response = requests.post(
+    'https://api.youtrade.ai/api/v1/strategies/create',
+    headers={
+        'Authorization': f'Bearer {API_KEY}',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'name': 'RSI Mean Reversion - Conservative',
+        'baseStrategyId': BASE_STRATEGY_ID,
+        'description': 'Take the existing RSI strategy but make it more conservative: tighter stop losses at 5%, require volume confirmation, and only trade BTC during high volume periods',
+        'intent': {
+            'pairs': ['BTC/USDT'],
+            'timeframe': '15m',
+            'risk_tolerance': 'low'
+        }
+    }
+)
+
+new_strategy = response.json()
+print(f"✅ Modified strategy created: {new_strategy['strategyId']}")
+print(f"Changes applied: {new_strategy['metadata']['modificationsApplied']}")
+```
+
+```javascript JavaScript
+const API_KEY = process.env.YOUTRADE_API_KEY;
+const BASE_STRATEGY_ID = '550e8400-e29b-41d4-a716-446655440000';
+
+async function createModifiedStrategy() {
+  const response = await fetch(
+    'https://api.youtrade.ai/api/v1/strategies/create',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: 'RSI Mean Reversion - Conservative',
+        baseStrategyId: BASE_STRATEGY_ID,
+        description: 'Take the existing RSI strategy but make it more conservative: tighter stop losses at 5%, require volume confirmation, and only trade BTC during high volume periods',
+        intent: {
+          pairs: ['BTC/USDT'],
+          timeframe: '15m',
+          risk_tolerance: 'low'
+        }
+      })
+    }
+  );
+  
+  const newStrategy = await response.json();
+  console.log(`✅ Modified strategy created: ${newStrategy.strategyId}`);
+  console.log(`Changes applied: ${newStrategy.metadata.modificationsApplied}`);
+  
+  return newStrategy;
+}
+
+createModifiedStrategy();
+```
+
+</CodeGroup>
+
+<Note>
+The AI understands the base strategy and will intelligently apply your requested modifications while maintaining the core logic.
+</Note>
+
+## Generate Automatic Variations
+
+Create multiple variations of a strategy automatically for A/B testing:
+
+<CodeGroup>
+
+```bash Bash
+STRATEGY_ID="550e8400-e29b-41d4-a716-446655440000"
+
+curl -X POST "https://api.youtrade.ai/api/v1/strategies/$STRATEGY_ID/variations" \
+  -H "Authorization: Bearer $YOUTRADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "count": 3,
+    "variationType": "parameter_sweep",
+    "parameters": {
+      "rsi_period": [10, 14, 20],
+      "timeframe": ["5m", "15m", "30m"]
+    }
+  }'
+```
+
+```python Python
+import requests
+import os
+
+API_KEY = os.getenv('YOUTRADE_API_KEY')
+STRATEGY_ID = '550e8400-e29b-41d4-a716-446655440000'
+
+response = requests.post(
+    f'https://api.youtrade.ai/api/v1/strategies/{STRATEGY_ID}/variations',
+    headers={
+        'Authorization': f'Bearer {API_KEY}',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'count': 3,
+        'variationType': 'parameter_sweep',
+        'parameters': {
+            'rsi_period': [10, 14, 20],
+            'timeframe': ['5m', '15m', '30m']
+        }
+    }
+)
+
+variations = response.json()['variations']
+print(f"✅ Created {len(variations)} variations")
+
+for i, variation in enumerate(variations, 1):
+    print(f"\nVariation {i}:")
+    print(f"  ID: {variation['strategyId']}")
+    print(f"  RSI Period: {variation['parameters']['rsi_period']}")
+    print(f"  Timeframe: {variation['parameters']['timeframe']}")
+```
+
+```javascript JavaScript
+const API_KEY = process.env.YOUTRADE_API_KEY;
+const STRATEGY_ID = '550e8400-e29b-41d4-a716-446655440000';
+
+async function generateVariations() {
+  const response = await fetch(
+    `https://api.youtrade.ai/api/v1/strategies/${STRATEGY_ID}/variations`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        count: 3,
+        variationType: 'parameter_sweep',
+        parameters: {
+          rsi_period: [10, 14, 20],
+          timeframe: ['5m', '15m', '30m']
+        }
+      })
+    }
+  );
+  
+  const data = await response.json();
+  const variations = data.variations;
+  
+  console.log(`✅ Created ${variations.length} variations`);
+  
+  variations.forEach((variation, index) => {
+    console.log(`\nVariation ${index + 1}:`);
+    console.log(`  ID: ${variation.strategyId}`);
+    console.log(`  RSI Period: ${variation.parameters.rsi_period}`);
+    console.log(`  Timeframe: ${variation.parameters.timeframe}`);
+  });
+  
+  return variations;
+}
+
+generateVariations();
+```
+
+</CodeGroup>
+
+## Common Modification Patterns
+
+### 1. Change Trading Pairs
+
+Adapt a strategy to different cryptocurrencies:
+
+```json
+{
+  "baseStrategyId": "original-strategy-id",
+  "modifications": {
+    "intent": {
+      "pairs": ["SOL/USDT", "ADA/USDT"]  // Changed from BTC/ETH
+    }
+  }
+}
+```
+
+### 2. Adjust Risk Profile
+
+Make a strategy more or less aggressive:
+
+```json
+{
+  "baseStrategyId": "original-strategy-id",
+  "description": "More aggressive version with higher risk/reward",
+  "modifications": {
+    "parameters": {
+      "stop_loss": -0.15,           // Wider stop loss
+      "take_profit": 0.25,          // Higher profit target
+      "max_open_trades": 5          // More concurrent trades
+    },
+    "intent": {
+      "risk_tolerance": "high"
+    }
+  }
+}
+```
+
+### 3. Change Timeframe
+
+Adapt for different trading speeds:
+
+```json
+{
+  "baseStrategyId": "original-strategy-id",
+  "description": "Faster scalping version with 1-minute candles",
+  "modifications": {
+    "intent": {
+      "timeframe": "1m"
+    },
+    "parameters": {
+      "minimal_roi": {
+        "0": 0.02,     // Quick exits
+        "5": 0.01
+      }
+    }
+  }
+}
+```
+
+### 4. Add Extra Conditions
+
+Enhance with additional filters:
+
+```json
+{
+  "baseStrategyId": "original-strategy-id",
+  "description": "Add volume and volatility filters to existing RSI strategy",
+  "modifications": {
+    "intent": {
+      "indicators": ["volume", "atr", "bollinger_bands"]
+    }
+  }
+}
+```
+
+## Compare Strategies Side-by-Side
+
+After creating variations, compare their performance:
+
+<CodeGroup>
+
+```bash Bash
+# Compare multiple strategies
+curl -X POST https://api.youtrade.ai/api/v1/strategies/compare \
+  -H "Authorization: Bearer $YOUTRADE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "strategyIds": [
+      "original-strategy-id",
+      "variation-1-id",
+      "variation-2-id"
+    ],
+    "backtestConfig": {
+      "days": 90,
+      "pairs": ["BTC/USDT"]
+    }
+  }'
+```
+
+```python Python
+def compare_strategies(strategy_ids: list, days: int = 90):
+    """Compare multiple strategies side by side"""
+    
+    response = requests.post(
+        f'{BASE_URL}/api/v1/strategies/compare',
+        headers={
+            'Authorization': f'Bearer {API_KEY}',
+            'Content-Type': 'application/json'
+        },
+        json={
+            'strategyIds': strategy_ids,
+            'backtestConfig': {
+                'days': days,
+                'pairs': ['BTC/USDT']
+            }
+        }
+    )
+    
+    comparison = response.json()
+    
+    print("\n📊 Strategy Comparison\n")
+    print(f"{'Strategy':<30} {'Win Rate':<12} {'Sharpe':<10} {'Max DD':<10}")
+    print("-" * 65)
+    
+    for result in comparison['results']:
+        print(f"{result['name']:<30} "
+              f"{result['metrics']['win_rate']:.1%}      "
+              f"{result['metrics']['sharpe_ratio']:.2f}      "
+              f"{result['metrics']['max_drawdown']:.1%}")
+    
+    return comparison
+
+# Usage
+strategy_ids = ['id1', 'id2', 'id3']
+compare_strategies(strategy_ids)
+```
+
+```javascript JavaScript
+async function compareStrategies(strategyIds, days = 90) {
+  const response = await fetch(
+    'https://api.youtrade.ai/api/v1/strategies/compare',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        strategyIds: strategyIds,
+        backtestConfig: {
+          days: days,
+          pairs: ['BTC/USDT']
+        }
+      })
+    }
+  );
+  
+  const comparison = await response.json();
+  
+  console.log('\n📊 Strategy Comparison\n');
+  console.log('Strategy'.padEnd(30) + 
+              'Win Rate'.padEnd(12) + 
+              'Sharpe'.padEnd(10) + 
+              'Max DD');
+  console.log('-'.repeat(65));
+  
+  comparison.results.forEach(result => {
+    console.log(
+      result.name.padEnd(30) +
+      `${(result.metrics.win_rate * 100).toFixed(1)}%`.padEnd(12) +
+      result.metrics.sharpe_ratio.toFixed(2).padEnd(10) +
+      `${(result.metrics.max_drawdown * 100).toFixed(1)}%`
+    );
+  });
+  
+  return comparison;
+}
+
+// Usage
+const strategyIds = ['id1', 'id2', 'id3'];
+compareStrategies(strategyIds);
+```
+
+</CodeGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Test Variations Systematically">
+    When creating variations, change one parameter at a time to understand the impact of each modification. This makes it easier to identify what actually improves performance.
+  </Accordion>
+
+  <Accordion title="Preserve Successful Strategies">
+    Before making major modifications to a working strategy, clone it first. This preserves your baseline for comparison and allows you to revert if needed.
+  </Accordion>
+
+  <Accordion title="Use Meaningful Names">
+    Name your strategy variations clearly to indicate what changed:
+    - ❌ "Strategy Copy 1", "Strategy Copy 2"
+    - ✅ "RSI Mean Reversion - 5m Timeframe", "RSI Mean Reversion - Conservative"
+  </Accordion>
+
+  <Accordion title="Backtest Before Deploying">
+    Always backtest modified strategies before deploying to production. Small parameter changes can have significant impacts on performance.
+  </Accordion>
+
+  <Accordion title="Document Your Changes">
+    Use the description field to document what you changed and why. Future you will thank present you!
+  </Accordion>
+</AccordionGroup>
+
+## Example: Complete Workflow
+
+Here's a complete workflow for creating and testing strategy variations:
+
+```python
+import requests
+import os
+import time
+
+API_KEY = os.getenv('YOUTRADE_API_KEY')
+BASE_URL = 'https://api.youtrade.ai'
+
+def complete_variation_workflow():
+    """Complete example of creating and testing variations"""
+    
+    # 1. Get the base strategy
+    base_strategy_id = '550e8400-e29b-41d4-a716-446655440000'
+    
+    # 2. Create three variations with different risk profiles
+    variations = []
+    risk_profiles = ['low', 'moderate', 'high']
+    
+    for risk in risk_profiles:
+        response = requests.post(
+            f'{BASE_URL}/api/v1/strategies/create',
+            headers={
+                'Authorization': f'Bearer {API_KEY}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'name': f'RSI Strategy - {risk.title()} Risk',
+                'baseStrategyId': base_strategy_id,
+                'description': f'Modified for {risk} risk tolerance',
+                'intent': {
+                    'pairs': ['BTC/USDT'],
+                    'timeframe': '15m',
+                    'risk_tolerance': risk
+                }
+            }
+        )
+        
+        variation = response.json()
+        variations.append(variation['strategyId'])
+        print(f"✅ Created {risk} risk variation: {variation['strategyId']}")
+    
+    # 3. Run backtests on all variations
+    print("\n⏳ Running backtests...")
+    backtest_jobs = []
+    
+    for strategy_id in variations:
+        response = requests.post(
+            f'{BASE_URL}/api/v1/strategies/{strategy_id}/backtest',
+            headers={
+                'Authorization': f'Bearer {API_KEY}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'config': {
+                    'days': 90,
+                    'stake_amount': 100
+                }
+            }
+        )
+        backtest_jobs.append(response.json()['backtestId'])
+    
+    # 4. Wait for completion and compare results
+    time.sleep(60)  # Wait for backtests to complete
+    
+    # 5. Compare results
+    response = requests.post(
+        f'{BASE_URL}/api/v1/strategies/compare',
+        headers={
+            'Authorization': f'Bearer {API_KEY}',
+            'Content-Type': 'application/json'
+        },
+        json={
+            'strategyIds': variations,
+            'backtestConfig': {'days': 90}
+        }
+    )
+    
+    comparison = response.json()
+    
+    # 6. Print results
+    print("\n📊 Comparison Results:\n")
+    for i, result in enumerate(comparison['results'], 1):
+        print(f"{i}. {result['name']}")
+        print(f"   Win Rate: {result['metrics']['win_rate']:.1%}")
+        print(f"   Sharpe: {result['metrics']['sharpe_ratio']:.2f}")
+        print(f"   Max Drawdown: {result['metrics']['max_drawdown']:.1%}\n")
+    
+    # 7. Select the best performer
+    best = max(comparison['results'], 
+               key=lambda x: x['metrics']['sharpe_ratio'])
+    
+    print(f"🏆 Best performer: {best['name']}")
+    print(f"   Sharpe Ratio: {best['metrics']['sharpe_ratio']:.2f}")
+    
+    return best
+
+# Run the workflow
+if __name__ == '__main__':
+    best_strategy = complete_variation_workflow()
+```
+
+## Response Examples
+
+### Clone Response
+
+```json
+{
+  "strategyId": "new-uuid-here",
+  "baseStrategyId": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "RSI Mean Reversion - ETH Optimized",
+  "status": "ready",
+  "createdAt": "2025-10-04T16:45:22.123Z",
+  "modificationsApplied": [
+    "Changed trading pair from BTC/USDT to ETH/USDT",
+    "Adjusted timeframe from 15m to 5m",
+    "Optimized RSI thresholds for higher volatility"
+  ],
+  "code": "... generated Python code ...",
+  "metadata": {
+    "clonedFrom": "550e8400-e29b-41d4-a716-446655440000",
+    "modificationType": "clone_with_intent"
+  }
+}
+```
+
+### Variations Response
+
+```json
+{
+  "baseStrategyId": "550e8400-e29b-41d4-a716-446655440000",
+  "variations": [
+    {
+      "strategyId": "variation-1-uuid",
+      "name": "RSI Mean Reversion - Variation 1",
+      "parameters": {
+        "rsi_period": 10,
+        "timeframe": "5m"
+      },
+      "status": "ready"
+    },
+    {
+      "strategyId": "variation-2-uuid",
+      "name": "RSI Mean Reversion - Variation 2",
+      "parameters": {
+        "rsi_period": 14,
+        "timeframe": "15m"
+      },
+      "status": "ready"
+    },
+    {
+      "strategyId": "variation-3-uuid",
+      "name": "RSI Mean Reversion - Variation 3",
+      "parameters": {
+        "rsi_period": 20,
+        "timeframe": "30m"
+      },
+      "status": "ready"
+    }
+  ],
+  "count": 3
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Backtest Variations" icon="chart-line" href="/youtrade-api/guides/backtesting">
+    Test your strategy variations against historical data
+  </Card>
+  
+  <Card title="Optimize Parameters" icon="sliders" href="/youtrade-api/guides/optimization">
+    Use AI to find optimal parameter values
+  </Card>
+  
+  <Card title="Deploy Best Strategy" icon="rocket" href="/youtrade-api/guides/deployment">
+    Deploy your winning strategy to production
+  </Card>
+  
+  <Card title="Monitor Performance" icon="monitor" href="/youtrade-api/guides/monitoring">
+    Track live performance and get alerts
+  </Card>
+</CardGroup>
+
+<Warning>
+Always backtest strategy modifications before deploying to production. Even small changes can significantly impact performance and risk profile.
+</Warning>

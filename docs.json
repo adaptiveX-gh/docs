@@ -79,7 +79,8 @@
           {
             "group": "Guides",
             "pages": [
-              "youtrade-api/guides/using-api"
+              "youtrade-api/guides/using-api",
+              "youtrade-api/guides/create-from-existing"
             ]
           }
         ]
