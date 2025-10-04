@@ -147,7 +147,7 @@ Use the upload endpoint to import your strategy:
 curl -X POST https://api.youtrade.ai/api/v1/strategies/upload \
   -H "Authorization: Bearer $YOUTRADE_API_KEY" \
   -F "file=@Sample_Strategy.zip" \
-  -F "name=VWAP MACD Strategy" \
+  -F "name=Sample Strategy Strategy" \
   -F "description=VWAP and MACD crossover strategy with ATR-based exits" \
   | jq '.'
 ```
@@ -169,7 +169,7 @@ with open(zip_file_path, 'rb') as f:
     }
     
     data = {
-        'name': 'VWAP MACD Strategy',
+        'name': 'Sample Strategy Strategy',
         'description': 'VWAP and MACD crossover strategy with ATR-based exits'
     }
     
@@ -206,7 +206,7 @@ async function uploadStrategy(zipFilePath) {
   form.append('file', fs.createReadStream(zipFilePath));
   
   // Add metadata
-  form.append('name', 'VWAP MACD Strategy');
+  form.append('name', 'Sample Strategy Strategy');
   form.append('description', 'VWAP and MACD crossover strategy with ATR-based exits');
   
   const response = await fetch(
@@ -275,7 +275,7 @@ After upload, YouTrade automatically validates your strategy:
 ```json
 {
   "strategyId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "name": "VWAP MACD Strategy",
+  "name": "Sample Strategy Strategy",
   "description": "VWAP and MACD crossover strategy with ATR-based exits",
   "status": "validated",
   "uploadedAt": "2025-10-04T18:30:00.000Z",
@@ -486,7 +486,7 @@ Override extracted settings during upload:
 curl -X POST https://api.youtrade.ai/api/v1/strategies/upload \
   -H "Authorization: Bearer $YOUTRADE_API_KEY" \
   -F "file=@Sample_Strategy.zip" \
-  -F "name=VWAP MACD Strategy" \
+  -F "name=Sample Strategy Strategy" \
   -F "description=VWAP and MACD crossover strategy" \
   -F "overrides={\"timeframe\":\"30m\",\"pairs\":[\"BTC/USDT\",\"ETH/USDT\"]}"
 ```
@@ -496,7 +496,7 @@ curl -X POST https://api.youtrade.ai/api/v1/strategies/upload \
 with open('Sample_Strategy.zip', 'rb') as f:
     files = {'file': f}
     data = {
-        'name': 'VWAP MACD Strategy',
+        'name': 'Sample Strategy Strategy',
         'description': 'VWAP and MACD crossover strategy',
         'overrides': json.dumps({
             'timeframe': '30m',
@@ -517,7 +517,7 @@ with open('Sample_Strategy.zip', 'rb') as f:
 // Upload with custom settings
 const form = new FormData();
 form.append('file', fs.createReadStream('Sample_Strategy.zip'));
-form.append('name', 'VWAP MACD Strategy');
+form.append('name', 'Sample Strategy Strategy');
 form.append('description', 'VWAP and MACD crossover strategy');
 form.append('overrides', JSON.stringify({
   timeframe: '30m',
@@ -562,7 +562,7 @@ def upload_and_test_strategy(zip_path: str):
     with open(zip_path, 'rb') as f:
         files = {'file': (os.path.basename(zip_path), f, 'application/zip')}
         data = {
-            'name': 'VWAP MACD Strategy',
+            'name': 'Sample Strategy Strategy',
             'description': 'Uploaded from local FreqTrade setup'
         }
         
