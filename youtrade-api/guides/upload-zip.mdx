@@ -1,0 +1,708 @@
+---
+title: 'Create Strategy from Zip File'
+description: 'Upload and import complete FreqTrade strategies with configurations and parameters'
+icon: 'file-zipper'
+---
+
+## Overview
+
+Already have a working FreqTrade strategy? Upload it to YouTrade and let our platform analyze, backtest, and deploy it for you. This guide shows you how to import complete strategy packages including:
+
+- **Strategy Python file** (`.py`) - Your FreqTrade strategy class
+- **Parameters file** (`.json`) - Hyperopt-optimized parameters
+- **Configuration file** (`.json`) - Exchange and trading settings
+
+<Info>
+YouTrade supports any valid FreqTrade strategy. We'll validate the code, extract parameters, and make it ready for backtesting and deployment.
+</Info>
+
+## What Should the Zip File Contain?
+
+Your zip file should include these files:
+
+<AccordionGroup>
+  <Accordion title="1. Strategy File (Required)">
+    **Filename**: `your_strategy_name.py`
+    
+    This is your main FreqTrade strategy class that inherits from `IStrategy`. It must include:
+    - `populate_indicators()` method
+    - `populate_entry_trend()` method  
+    - `populate_exit_trend()` method
+    - Valid FreqTrade strategy structure
+    
+    **Example**: `VWAP_MACD.py`
+  </Accordion>
+
+  <Accordion title="2. Parameters File (Optional)">
+    **Filename**: `your_strategy_name.json` or `params.json`
+    
+    Hyperopt-optimized parameters exported from FreqTrade. Contains:
+    - Buy/sell parameters
+    - ROI settings
+    - Stoploss values
+    - Trailing stop configuration
+    
+    **Example**: `VWAP_MACD.json`
+    ```json
+    {
+      "strategy_name": "VWAP_MACD",
+      "params": {
+        "buy": {
+          "leverage_level": 1,
+          "atr_mult": 2,
+          "risk_ratio": 3
+        }
+      }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="3. Configuration File (Optional)">
+    **Filename**: `config.json` or `binance_*.json`
+    
+    FreqTrade configuration with:
+    - Exchange settings (Binance, Kraken, etc.)
+    - Trading pairs whitelist
+    - Stake amount and currency
+    - Risk management settings
+    
+    **Example**: `binance_futures_VWAP_MACD.json`
+    ```json
+    {
+      "max_open_trades": 1,
+      "stake_currency": "USDT",
+      "trading_mode": "futures",
+      "exchange": {
+        "name": "binance",
+        "pair_whitelist": ["TON/USDT:USDT"]
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Zip File Structure
+
+Your zip file should look like this:
+
+```
+VWAP_MACD.zip
+├── VWAP_MACD.py                      # Strategy file (required)
+├── VWAP_MACD.json                    # Parameters (optional)
+└── binance_futures_VWAP_MACD.json   # Config (optional)
+```
+
+<Note>
+**File Naming**: Files can have any names, but using consistent naming (like `VWAP_MACD.*`) helps keep things organized.
+</Note>
+
+## Step-by-Step Upload Process
+
+### Step 1: Prepare Your Zip File
+
+Gather your FreqTrade strategy files and create a zip archive:
+
+<Tabs>
+  <Tab title="Windows">
+    1. Select all your strategy files (`.py`, `.json`)
+    2. Right-click and select **Send to → Compressed (zipped) folder**
+    3. Name it `your_strategy_name.zip`
+  </Tab>
+  
+  <Tab title="macOS">
+    1. Select all your strategy files
+    2. Right-click and select **Compress Items**
+    3. Rename the archive to `your_strategy_name.zip`
+  </Tab>
+  
+  <Tab title="Linux">
+    ```bash
+    # Navigate to your strategy directory
+    cd ~/freqtrade/user_data/strategies
+    
+    # Create zip file
+    zip VWAP_MACD.zip \
+        VWAP_MACD.py \
+        VWAP_MACD.json \
+        binance_futures_VWAP_MACD.json
+    
+    # Verify contents
+    unzip -l VWAP_MACD.zip
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+**Maximum file size**: 10 MB per zip file. If your strategy includes large data files, exclude them and upload only the code and configs.
+</Warning>
+
+### Step 2: Upload via API
+
+Use the upload endpoint to import your strategy:
+
+<CodeGroup>
+
+```bash Bash
+# Upload strategy zip file
+curl -X POST https://api.youtrade.ai/api/v1/strategies/upload \
+  -H "Authorization: Bearer $YOUTRADE_API_KEY" \
+  -F "file=@VWAP_MACD.zip" \
+  -F "name=VWAP MACD Strategy" \
+  -F "description=VWAP and MACD crossover strategy with ATR-based exits" \
+  | jq '.'
+```
+
+```python Python
+import requests
+import os
+
+API_KEY = os.getenv('YOUTRADE_API_KEY')
+BASE_URL = 'https://api.youtrade.ai'
+
+# Path to your zip file
+zip_file_path = 'VWAP_MACD.zip'
+
+# Prepare the upload
+with open(zip_file_path, 'rb') as f:
+    files = {
+        'file': (os.path.basename(zip_file_path), f, 'application/zip')
+    }
+    
+    data = {
+        'name': 'VWAP MACD Strategy',
+        'description': 'VWAP and MACD crossover strategy with ATR-based exits'
+    }
+    
+    # Upload the strategy
+    response = requests.post(
+        f'{BASE_URL}/api/v1/strategies/upload',
+        headers={'Authorization': f'Bearer {API_KEY}'},
+        files=files,
+        data=data
+    )
+
+if response.status_code == 200:
+    result = response.json()
+    print(f"✅ Strategy uploaded successfully!")
+    print(f"Strategy ID: {result['strategyId']}")
+    print(f"Status: {result['status']}")
+    print(f"\nExtracted files:")
+    for file in result['files']:
+        print(f"  - {file['name']} ({file['type']})")
+else:
+    print(f"❌ Upload failed: {response.status_code}")
+    print(response.json())
+```
+
+```javascript JavaScript
+const API_KEY = process.env.YOUTRADE_API_KEY;
+const fs = require('fs');
+const FormData = require('form-data');
+
+async function uploadStrategy(zipFilePath) {
+  const form = new FormData();
+  
+  // Add the zip file
+  form.append('file', fs.createReadStream(zipFilePath));
+  
+  // Add metadata
+  form.append('name', 'VWAP MACD Strategy');
+  form.append('description', 'VWAP and MACD crossover strategy with ATR-based exits');
+  
+  const response = await fetch(
+    'https://api.youtrade.ai/api/v1/strategies/upload',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        ...form.getHeaders()
+      },
+      body: form
+    }
+  );
+  
+  const result = await response.json();
+  
+  if (response.ok) {
+    console.log('✅ Strategy uploaded successfully!');
+    console.log(`Strategy ID: ${result.strategyId}`);
+    console.log(`Status: ${result.status}`);
+    console.log('\nExtracted files:');
+    result.files.forEach(file => {
+      console.log(`  - ${file.name} (${file.type})`);
+    });
+  } else {
+    console.error('❌ Upload failed:', result);
+  }
+  
+  return result;
+}
+
+// Usage
+uploadStrategy('VWAP_MACD.zip');
+```
+
+</CodeGroup>
+
+### Step 3: Review Validation Results
+
+After upload, YouTrade automatically validates your strategy:
+
+<Steps>
+  <Step title="Code Validation">
+    Checks Python syntax and FreqTrade compatibility
+  </Step>
+  
+  <Step title="Security Scan">
+    Scans for dangerous code patterns (file access, network calls, etc.)
+  </Step>
+  
+  <Step title="Dependency Analysis">
+    Identifies required libraries (talib, pandas_ta, etc.)
+  </Step>
+  
+  <Step title="Parameter Extraction">
+    Parses parameters from JSON files and strategy code
+  </Step>
+  
+  <Step title="Configuration Parsing">
+    Extracts trading pairs, timeframes, and settings
+  </Step>
+</Steps>
+
+### Example Response
+
+```json
+{
+  "strategyId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "VWAP MACD Strategy",
+  "description": "VWAP and MACD crossover strategy with ATR-based exits",
+  "status": "validated",
+  "uploadedAt": "2025-10-04T18:30:00.000Z",
+  "files": [
+    {
+      "name": "VWAP_MACD.py",
+      "type": "strategy",
+      "size": 8456,
+      "valid": true
+    },
+    {
+      "name": "VWAP_MACD.json",
+      "type": "parameters",
+      "size": 342,
+      "valid": true
+    },
+    {
+      "name": "binance_futures_VWAP_MACD.json",
+      "type": "config",
+      "size": 1523,
+      "valid": true
+    }
+  ],
+  "validation": {
+    "passed": true,
+    "syntaxValid": true,
+    "freqtradeCompatible": true,
+    "securityIssues": [],
+    "warnings": [
+      "Strategy uses custom_exit() - ensure it's well-tested"
+    ],
+    "dependencies": [
+      "talib",
+      "pandas_ta",
+      "technical"
+    ]
+  },
+  "extractedData": {
+    "className": "VWAP_MACD",
+    "interfaceVersion": 3,
+    "timeframe": "1h",
+    "canShort": true,
+    "stoploss": -0.25,
+    "trailingStop": false,
+    "pairs": ["TON/USDT:USDT"],
+    "tradingMode": "futures",
+    "parameters": {
+      "buy": {
+        "leverage_level": 1,
+        "atr_mult": 2,
+        "macd_cross_window": 5,
+        "risk_ratio": 3,
+        "trend_filter_enabled": true,
+        "vwap_cross_window": 15
+      }
+    },
+    "indicators": [
+      "VWAP",
+      "MACD",
+      "EMA",
+      "ATR"
+    ]
+  },
+  "code": "# pragma pylint: disable=missing-docstring...",
+  "filePath": "/strategies/vwap_macd_strategy.py"
+}
+```
+
+## Notes and Tips
+
+### ✅ Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Test Locally First" icon="flask">
+    Always test your strategy with FreqTrade locally before uploading to ensure it works correctly.
+  </Card>
+  
+  <Card title="Remove Sensitive Data" icon="shield">
+    Strip API keys and secrets from config files before zipping. YouTrade will ignore them anyway.
+  </Card>
+  
+  <Card title="Include Documentation" icon="file-lines">
+    Add comments in your strategy code explaining the logic - it helps with future modifications.
+  </Card>
+  
+  <Card title="Version Your Strategies" icon="code-branch">
+    Include version numbers or dates in filenames (e.g., `VWAP_MACD_v2.zip`)
+  </Card>
+</CardGroup>
+
+### ⚠️ Common Issues
+
+<AccordionGroup>
+  <Accordion title="Invalid Python Syntax">
+    **Error**: `SyntaxError: invalid syntax on line 42`
+    
+    **Solution**: Validate your Python code locally first:
+    ```bash
+    python -m py_compile VWAP_MACD.py
+    ```
+  </Accordion>
+
+  <Accordion title="Missing Dependencies">
+    **Warning**: `Module 'pandas_ta' not found`
+    
+    **Solution**: YouTrade supports common libraries (talib, pandas_ta, technical). If using custom libraries, they may not be available. Check our [supported libraries list](/youtrade-api/reference/libraries).
+  </Accordion>
+
+  <Accordion title="Security Violations">
+    **Error**: `Security scan failed: file system access detected`
+    
+    **Solution**: Remove code that:
+    - Reads/writes files outside FreqTrade directories
+    - Makes external API calls
+    - Executes shell commands
+    
+    These are blocked for security reasons.
+  </Accordion>
+
+  <Accordion title="Parameter Mismatch">
+    **Warning**: `Parameters in JSON don't match strategy class`
+    
+    **Solution**: Ensure parameter names in your JSON file match the parameter definitions in your strategy class:
+    ```python
+    # In strategy
+    atr_mult = CategoricalParameter([1.5, 2, 2.5], default=2, space="buy")
+    
+    # In JSON
+    "buy": {
+      "atr_mult": 2  // Must match exactly
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Zip File Too Large">
+    **Error**: `File size exceeds 10MB limit`
+    
+    **Solution**: Remove unnecessary files from the zip:
+    - Historical data files
+    - Backtest results
+    - Log files
+    - Cached data
+    
+    Only include `.py` and `.json` files.
+  </Accordion>
+</AccordionGroup>
+
+### 📋 Validation Checklist
+
+Before uploading, verify your strategy meets these requirements:
+
+- [ ] Strategy inherits from `IStrategy`
+- [ ] Required methods implemented (`populate_indicators`, `populate_entry_trend`, `populate_exit_trend`)
+- [ ] No syntax errors (`python -m py_compile strategy.py`)
+- [ ] No file system operations (except FreqTrade user_data)
+- [ ] No external API calls (except exchange APIs via FreqTrade)
+- [ ] All imports are from supported libraries
+- [ ] Parameters match between code and JSON files
+- [ ] Config file has valid JSON structure
+- [ ] API keys removed from config
+- [ ] Total zip size under 10MB
+
+### 🎯 Supported Strategy Features
+
+YouTrade fully supports these FreqTrade features:
+
+| Feature | Supported | Notes |
+|---------|-----------|-------|
+| **Long positions** | ✅ | `enter_long` / `exit_long` |
+| **Short positions** | ✅ | `enter_short` / `exit_short` |
+| **Custom indicators** | ✅ | Any talib, pandas_ta, or custom calculations |
+| **Hyperopt parameters** | ✅ | All parameter types (Integer, Decimal, Categorical, etc.) |
+| **Custom stoploss** | ✅ | `custom_stoploss()` method |
+| **Custom exit** | ✅ | `custom_exit()` method |
+| **Leverage** | ✅ | `leverage()` method for futures trading |
+| **Informative pairs** | ✅ | Additional timeframes/pairs for context |
+| **Trailing stop** | ✅ | Built-in and custom trailing stops |
+| **ROI table** | ✅ | Time-based profit targets |
+| **Protection strategies** | ✅ | StopLoss, Cooldown, MaxDrawdown, etc. |
+| **Pair locks** | ⚠️ | Supported but requires careful testing |
+| **Recursive analysis** | ❌ | Not supported for security reasons |
+
+## What Happens After Upload?
+
+Once your strategy is validated, YouTrade:
+
+1. **Stores the code** securely in your account
+2. **Extracts parameters** from JSON files
+3. **Identifies trading pairs** and timeframes
+4. **Creates a strategy profile** with metadata
+5. **Makes it available** for backtesting and deployment
+
+You can then:
+
+- Run backtests with historical data
+- Modify parameters through the API
+- Deploy to cloud infrastructure
+- Create variations of the strategy
+- Share with collaborators (if enabled)
+
+## Advanced: Upload with Custom Settings
+
+Override extracted settings during upload:
+
+<CodeGroup>
+
+```bash Bash
+curl -X POST https://api.youtrade.ai/api/v1/strategies/upload \
+  -H "Authorization: Bearer $YOUTRADE_API_KEY" \
+  -F "file=@VWAP_MACD.zip" \
+  -F "name=VWAP MACD Strategy" \
+  -F "description=VWAP and MACD crossover strategy" \
+  -F "overrides={\"timeframe\":\"30m\",\"pairs\":[\"BTC/USDT\",\"ETH/USDT\"]}"
+```
+
+```python Python
+# Upload with overrides
+with open('VWAP_MACD.zip', 'rb') as f:
+    files = {'file': f}
+    data = {
+        'name': 'VWAP MACD Strategy',
+        'description': 'VWAP and MACD crossover strategy',
+        'overrides': json.dumps({
+            'timeframe': '30m',
+            'pairs': ['BTC/USDT', 'ETH/USDT'],
+            'stoploss': -0.15  # Override default stoploss
+        })
+    }
+    
+    response = requests.post(
+        f'{BASE_URL}/api/v1/strategies/upload',
+        headers={'Authorization': f'Bearer {API_KEY}'},
+        files=files,
+        data=data
+    )
+```
+
+```javascript JavaScript
+// Upload with custom settings
+const form = new FormData();
+form.append('file', fs.createReadStream('VWAP_MACD.zip'));
+form.append('name', 'VWAP MACD Strategy');
+form.append('description', 'VWAP and MACD crossover strategy');
+form.append('overrides', JSON.stringify({
+  timeframe: '30m',
+  pairs: ['BTC/USDT', 'ETH/USDT'],
+  stoploss: -0.15
+}));
+
+const response = await fetch(
+  'https://api.youtrade.ai/api/v1/strategies/upload',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      ...form.getHeaders()
+    },
+    body: form
+  }
+);
+```
+
+</CodeGroup>
+
+## Example: Complete Upload Workflow
+
+Here's a complete Python script for uploading and testing a strategy:
+
+```python
+import requests
+import os
+import json
+import time
+
+API_KEY = os.getenv('YOUTRADE_API_KEY')
+BASE_URL = 'https://api.youtrade.ai'
+
+def upload_and_test_strategy(zip_path: str):
+    """Upload a strategy and run a quick backtest"""
+    
+    # Step 1: Upload the strategy
+    print("📤 Uploading strategy...")
+    
+    with open(zip_path, 'rb') as f:
+        files = {'file': (os.path.basename(zip_path), f, 'application/zip')}
+        data = {
+            'name': 'VWAP MACD Strategy',
+            'description': 'Uploaded from local FreqTrade setup'
+        }
+        
+        response = requests.post(
+            f'{BASE_URL}/api/v1/strategies/upload',
+            headers={'Authorization': f'Bearer {API_KEY}'},
+            files=files,
+            data=data
+        )
+    
+    if response.status_code != 200:
+        print(f"❌ Upload failed: {response.text}")
+        return None
+    
+    strategy = response.json()
+    strategy_id = strategy['strategyId']
+    
+    print(f"✅ Strategy uploaded: {strategy_id}")
+    print(f"Status: {strategy['status']}")
+    
+    # Step 2: Check validation
+    if not strategy['validation']['passed']:
+        print("\n⚠️ Validation issues:")
+        for issue in strategy['validation']['securityIssues']:
+            print(f"  - {issue}")
+        return None
+    
+    if strategy['validation']['warnings']:
+        print("\n⚠️ Warnings:")
+        for warning in strategy['validation']['warnings']:
+            print(f"  - {warning}")
+    
+    # Step 3: Run a quick backtest
+    print("\n🧪 Running backtest...")
+    
+    backtest_response = requests.post(
+        f'{BASE_URL}/api/v1/strategies/{strategy_id}/backtest',
+        headers={
+            'Authorization': f'Bearer {API_KEY}',
+            'Content-Type': 'application/json'
+        },
+        json={
+            'config': {
+                'days': 30,  # Quick 30-day test
+                'pairs': strategy['extractedData']['pairs'],
+                'timeframe': strategy['extractedData']['timeframe']
+            }
+        }
+    )
+    
+    backtest = backtest_response.json()
+    backtest_id = backtest['backtestId']
+    
+    print(f"Backtest started: {backtest_id}")
+    print("Waiting for results...")
+    
+    # Step 4: Wait for backtest completion
+    time.sleep(30)  # Wait 30 seconds
+    
+    results_response = requests.get(
+        f'{BASE_URL}/api/v1/strategies/{strategy_id}/backtest/{backtest_id}',
+        headers={'Authorization': f'Bearer {API_KEY}'}
+    )
+    
+    results = results_response.json()
+    
+    if results['status'] == 'completed':
+        print("\n✅ Backtest completed!")
+        print(f"Total Trades: {results['results']['total_trades']}")
+        print(f"Win Rate: {results['results']['win_rate']:.1%}")
+        print(f"Profit: {results['results']['total_profit']:.2f}%")
+        print(f"Sharpe Ratio: {results['results']['sharpe_ratio']:.2f}")
+    else:
+        print(f"\n⏳ Backtest status: {results['status']}")
+    
+    return strategy
+
+# Usage
+if __name__ == '__main__':
+    strategy = upload_and_test_strategy('VWAP_MACD.zip')
+    
+    if strategy:
+        print(f"\n🎉 Strategy ready! ID: {strategy['strategyId']}")
+```
+
+## Next Steps
+
+After successfully uploading your strategy:
+
+<CardGroup cols={2}>
+  <Card title="Run Backtests" icon="chart-line" href="/youtrade-api/guides/backtesting">
+    Test your imported strategy against historical data
+  </Card>
+  
+  <Card title="Optimize Parameters" icon="sliders" href="/youtrade-api/guides/optimization">
+    Use AI to find better parameter values
+  </Card>
+  
+  <Card title="Deploy to Cloud" icon="cloud" href="/youtrade-api/guides/deployment">
+    Launch your strategy on cloud infrastructure
+  </Card>
+  
+  <Card title="Monitor Performance" icon="chart-mixed" href="/youtrade-api/guides/monitoring">
+    Track live trading performance
+  </Card>
+</CardGroup>
+
+<Note>
+**Pro Tip**: After uploading, you can still modify the strategy using our AI-powered modification endpoints. This is perfect for testing variations without changing your local files!
+</Note>
+
+## Troubleshooting
+
+### Get Upload Status
+
+Check the status of a recent upload:
+
+```bash
+curl -X GET https://api.youtrade.ai/api/v1/strategies/{strategyId} \
+  -H "Authorization: Bearer $YOUTRADE_API_KEY"
+```
+
+### Re-validate Strategy
+
+If you've made changes and want to re-validate:
+
+```bash
+curl -X POST https://api.youtrade.ai/api/v1/strategies/{strategyId}/validate \
+  -H "Authorization: Bearer $YOUTRADE_API_KEY"
+```
+
+### Download Processed Files
+
+Retrieve the validated and processed files:
+
+```bash
+curl -X GET https://api.youtrade.ai/api/v1/strategies/{strategyId}/files \
+  -H "Authorization: Bearer $YOUTRADE_API_KEY"
+```
+
+<Warning>
+**Important**: Uploaded strategies are private to your account by default. They won't be shared unless you explicitly enable sharing in the settings.
+</Warning>
