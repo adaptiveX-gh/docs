@@ -30,7 +30,7 @@ Your zip file should include these files:
     - `populate_exit_trend()` method
     - Valid FreqTrade strategy structure
     
-    **Example**: `VWAP_MACD.py`
+    **Example**: `Sample_Strategy.py`
   </Accordion>
 
   <Accordion title="2. Parameters File (Optional)">
@@ -42,10 +42,10 @@ Your zip file should include these files:
     - Stoploss values
     - Trailing stop configuration
     
-    **Example**: `VWAP_MACD.json`
+    **Example**: `Sample_Strategy.json`
     ```json
     {
-      "strategy_name": "VWAP_MACD",
+      "strategy_name": "Sample_Strategy",
       "params": {
         "buy": {
           "leverage_level": 1,
@@ -66,7 +66,7 @@ Your zip file should include these files:
     - Stake amount and currency
     - Risk management settings
     
-    **Example**: `binance_futures_VWAP_MACD.json`
+    **Example**: `binance_futures_Sample_Strategy.json`
     ```json
     {
       "max_open_trades": 1,
@@ -86,14 +86,14 @@ Your zip file should include these files:
 Your zip file should look like this:
 
 ```
-VWAP_MACD.zip
-├── VWAP_MACD.py                      # Strategy file (required)
-├── VWAP_MACD.json                    # Parameters (optional)
-└── binance_futures_VWAP_MACD.json   # Config (optional)
+Sample_Strategy.zip
+├── Sample_Strategy.py                      # Strategy file (required)
+├── Sample_Strategy.json                    # Parameters (optional)
+└── binance_futures_Sample_Strategy.json   # Config (optional)
 ```
 
 <Note>
-**File Naming**: Files can have any names, but using consistent naming (like `VWAP_MACD.*`) helps keep things organized.
+**File Naming**: Files can have any names, but using consistent naming (like `Sample_Strategy.*`) helps keep things organized.
 </Note>
 
 ## Step-by-Step Upload Process
@@ -121,13 +121,13 @@ Gather your FreqTrade strategy files and create a zip archive:
     cd ~/freqtrade/user_data/strategies
     
     # Create zip file
-    zip VWAP_MACD.zip \
-        VWAP_MACD.py \
-        VWAP_MACD.json \
-        binance_futures_VWAP_MACD.json
+    zip Sample_Strategy.zip \
+        Sample_Strategy.py \
+        Sample_Strategy.json \
+        binance_futures_Sample_Strategy.json
     
     # Verify contents
-    unzip -l VWAP_MACD.zip
+    unzip -l Sample_Strategy.zip
     ```
   </Tab>
 </Tabs>
@@ -146,7 +146,7 @@ Use the upload endpoint to import your strategy:
 # Upload strategy zip file
 curl -X POST https://api.youtrade.ai/api/v1/strategies/upload \
   -H "Authorization: Bearer $YOUTRADE_API_KEY" \
-  -F "file=@VWAP_MACD.zip" \
+  -F "file=@Sample_Strategy.zip" \
   -F "name=VWAP MACD Strategy" \
   -F "description=VWAP and MACD crossover strategy with ATR-based exits" \
   | jq '.'
@@ -160,7 +160,7 @@ API_KEY = os.getenv('YOUTRADE_API_KEY')
 BASE_URL = 'https://api.youtrade.ai'
 
 # Path to your zip file
-zip_file_path = 'VWAP_MACD.zip'
+zip_file_path = 'Sample_Strategy.zip'
 
 # Prepare the upload
 with open(zip_file_path, 'rb') as f:
@@ -239,7 +239,7 @@ async function uploadStrategy(zipFilePath) {
 }
 
 // Usage
-uploadStrategy('VWAP_MACD.zip');
+uploadStrategy('Sample_Strategy.zip');
 ```
 
 </CodeGroup>
@@ -281,19 +281,19 @@ After upload, YouTrade automatically validates your strategy:
   "uploadedAt": "2025-10-04T18:30:00.000Z",
   "files": [
     {
-      "name": "VWAP_MACD.py",
+      "name": "Sample_Strategy.py",
       "type": "strategy",
       "size": 8456,
       "valid": true
     },
     {
-      "name": "VWAP_MACD.json",
+      "name": "Sample_Strategy.json",
       "type": "parameters",
       "size": 342,
       "valid": true
     },
     {
-      "name": "binance_futures_VWAP_MACD.json",
+      "name": "binance_futures_Sample_Strategy.json",
       "type": "config",
       "size": 1523,
       "valid": true
@@ -314,7 +314,7 @@ After upload, YouTrade automatically validates your strategy:
     ]
   },
   "extractedData": {
-    "className": "VWAP_MACD",
+    "className": "Sample_Strategy",
     "interfaceVersion": 3,
     "timeframe": "1h",
     "canShort": true,
@@ -340,7 +340,7 @@ After upload, YouTrade automatically validates your strategy:
     ]
   },
   "code": "# pragma pylint: disable=missing-docstring...",
-  "filePath": "/strategies/vwap_macd_strategy.py"
+  "filePath": "/strategies/Sample_Strategy_strategy.py"
 }
 ```
 
@@ -362,7 +362,7 @@ After upload, YouTrade automatically validates your strategy:
   </Card>
   
   <Card title="Version Your Strategies" icon="code-branch">
-    Include version numbers or dates in filenames (e.g., `VWAP_MACD_v2.zip`)
+    Include version numbers or dates in filenames (e.g., `Sample_Strategy_v2.zip`)
   </Card>
 </CardGroup>
 
@@ -374,7 +374,7 @@ After upload, YouTrade automatically validates your strategy:
     
     **Solution**: Validate your Python code locally first:
     ```bash
-    python -m py_compile VWAP_MACD.py
+    python -m py_compile Sample_Strategy.py
     ```
   </Accordion>
 
@@ -485,7 +485,7 @@ Override extracted settings during upload:
 ```bash Bash
 curl -X POST https://api.youtrade.ai/api/v1/strategies/upload \
   -H "Authorization: Bearer $YOUTRADE_API_KEY" \
-  -F "file=@VWAP_MACD.zip" \
+  -F "file=@Sample_Strategy.zip" \
   -F "name=VWAP MACD Strategy" \
   -F "description=VWAP and MACD crossover strategy" \
   -F "overrides={\"timeframe\":\"30m\",\"pairs\":[\"BTC/USDT\",\"ETH/USDT\"]}"
@@ -493,7 +493,7 @@ curl -X POST https://api.youtrade.ai/api/v1/strategies/upload \
 
 ```python Python
 # Upload with overrides
-with open('VWAP_MACD.zip', 'rb') as f:
+with open('Sample_Strategy.zip', 'rb') as f:
     files = {'file': f}
     data = {
         'name': 'VWAP MACD Strategy',
@@ -516,7 +516,7 @@ with open('VWAP_MACD.zip', 'rb') as f:
 ```javascript JavaScript
 // Upload with custom settings
 const form = new FormData();
-form.append('file', fs.createReadStream('VWAP_MACD.zip'));
+form.append('file', fs.createReadStream('Sample_Strategy.zip'));
 form.append('name', 'VWAP MACD Strategy');
 form.append('description', 'VWAP and MACD crossover strategy');
 form.append('overrides', JSON.stringify({
@@ -642,7 +642,7 @@ def upload_and_test_strategy(zip_path: str):
 
 # Usage
 if __name__ == '__main__':
-    strategy = upload_and_test_strategy('VWAP_MACD.zip')
+    strategy = upload_and_test_strategy('Sample_Strategy.zip')
     
     if strategy:
         print(f"\n🎉 Strategy ready! ID: {strategy['strategyId']}")
