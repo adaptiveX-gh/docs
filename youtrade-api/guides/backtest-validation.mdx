@@ -1,202 +1,401 @@
----
-title: 'Backtesting & Validation'
-description: 'Test and validate your trading strategies with historical data before risking real capital'
-icon: 'chart-line'
----
+------
 
-## Overview
+title: 'Backtest & Validation'title: 'Backtesting & Validation'
 
-Backtesting is the critical step between strategy creation and live deployment. It allows you to validate your strategy's performance using historical market data, identify potential issues, and optimize parameters before risking real capital.
+description: 'Test and validate your trading strategies with historical data before risking real capital'description: 'Test and validate your trading strategies with historical data before risking real capital'
 
-YouTrade API provides comprehensive backtesting capabilities that simulate how your strategy would have performed in the past, giving you confidence in its potential future performance.
+icon: 'chart-line'icon: 'chart-line'
 
-<Warning>
+------
+
+
+
+## Overview## Overview
+
+
+
+Backtesting is the critical step between strategy creation and live deployment. It allows you to validate your strategy's performance using historical market data, identify potential issues, and optimize parameters before risking real capital.Backtesting is the critical step between strategy creation and live deployment. It allows you to validate your strategy's performance using historical market data, identify potential issues, and optimize parameters before risking real capital.
+
+
+
+<Warning>YouTrade API provides comprehensive backtesting capabilities that simulate how your strategy would have performed in the past, giving you confidence in its potential future performance.
+
 **Past performance does not guarantee future results.** Backtesting is a validation tool, not a prediction tool. Always start with paper trading before going live.
-</Warning>
 
----
+</Warning><Warning>
 
-## What is Backtesting?
+**Past performance does not guarantee future results.** Backtesting is a validation tool, not a prediction tool. Always start with paper trading before going live.
 
-Backtesting simulates your strategy's trades using historical price data to evaluate:
+---</Warning>
 
-- **Profitability**: Total profit/loss and ROI
-- **Risk Metrics**: Maximum drawdown, win rate, risk-reward ratio
-- **Trade Statistics**: Number of trades, average duration, entry/exit performance
-- **Market Conditions**: How the strategy performs in different market environments
 
-### Why Backtest?
 
-<AccordionGroup>
-  <Accordion title="✅ Validate Strategy Logic" icon="check-circle">
-    Ensure your entry and exit conditions work as intended without bugs or logical errors.
-  </Accordion>
-  
-  <Accordion title="📊 Measure Performance" icon="chart-line">
-    Get concrete metrics on profitability, win rate, drawdown, and other key performance indicators.
-  </Accordion>
-  
-  <Accordion title="🔍 Identify Edge Cases" icon="magnifying-glass">
-    Discover how your strategy behaves in extreme market conditions, crashes, or low-volume periods.
-  </Accordion>
-  
-  <Accordion title="⚙️ Optimize Parameters" icon="sliders">
-    Find the best settings for indicators, stop-loss levels, and other configurable parameters.
-  </Accordion>
-  
-  <Accordion title="💰 Build Confidence" icon="shield-check">
-    Gain confidence in your strategy before risking real money in live trading.
-  </Accordion>
-</AccordionGroup>
+## Quick Start: Run Your First Backtest---
 
----
 
-## Quick Start: Run Your First Backtest
 
-The simplest way to backtest a strategy is to provide the strategy ID and a time range:
+The simplest way to backtest a strategy is to provide the strategy ID and a time range:## What is Backtesting?
 
-<CodeGroup>
 
-```bash Bash
-curl -X POST https://api.youtrade.ai/api/v1/backtest/run \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
+
+<CodeGroup>Backtesting simulates your strategy's trades using historical price data to evaluate:
+
+
+
+```bash Bash- **Profitability**: Total profit/loss and ROI
+
+curl -X POST https://api.youtrade.ai/api/v1/backtest/run \- **Risk Metrics**: Maximum drawdown, win rate, risk-reward ratio
+
+  -H "Authorization: Bearer YOUR_API_KEY" \- **Trade Statistics**: Number of trades, average duration, entry/exit performance
+
+  -H "Content-Type: application/json" \- **Market Conditions**: How the strategy performs in different market environments
+
   -d '{
-    "strategy_id": "strat_abc123",
+
+    "strategy_id": "strat_abc123",### Why Backtest?
+
     "timerange": "20240101-20241001",
-    "stake_amount": 100,
-    "max_open_trades": 3
-  }'
-```
 
-```python Python
-import requests
+    "stake_amount": 100,<AccordionGroup>
 
-response = requests.post(
-    "https://api.youtrade.ai/api/v1/backtest/run",
-    headers={
-        "Authorization": "Bearer YOUR_API_KEY",
-        "Content-Type": "application/json"
-    },
-    json={
-        "strategy_id": "strat_abc123",
-        "timerange": "20240101-20241001",
-        "stake_amount": 100,
-        "max_open_trades": 3
-    }
-)
+    "max_open_trades": 3  <Accordion title="✅ Validate Strategy Logic" icon="check-circle">
 
-backtest = response.json()
+  }'    Ensure your entry and exit conditions work as intended without bugs or logical errors.
+
+```  </Accordion>
+
+  
+
+```python Python  <Accordion title="📊 Measure Performance" icon="chart-line">
+
+import requests    Get concrete metrics on profitability, win rate, drawdown, and other key performance indicators.
+
+  </Accordion>
+
+response = requests.post(  
+
+    "https://api.youtrade.ai/api/v1/backtest/run",  <Accordion title="🔍 Identify Edge Cases" icon="magnifying-glass">
+
+    headers={    Discover how your strategy behaves in extreme market conditions, crashes, or low-volume periods.
+
+        "Authorization": "Bearer YOUR_API_KEY",  </Accordion>
+
+        "Content-Type": "application/json"  
+
+    },  <Accordion title="⚙️ Optimize Parameters" icon="sliders">
+
+    json={    Find the best settings for indicators, stop-loss levels, and other configurable parameters.
+
+        "strategy_id": "strat_abc123",  </Accordion>
+
+        "timerange": "20240101-20241001",  
+
+        "stake_amount": 100,  <Accordion title="💰 Build Confidence" icon="shield-check">
+
+        "max_open_trades": 3    Gain confidence in your strategy before risking real money in live trading.
+
+    }  </Accordion>
+
+)</AccordionGroup>
+
+
+
+backtest = response.json()---
+
 print(f"Backtest started: {backtest['backtest_id']}")
-print(f"Status: {backtest['status']}")
-```
 
-```javascript JavaScript
+```## Quick Start: Run Your First Backtest
+
+
+
+```javascript JavaScriptThe simplest way to backtest a strategy is to provide the strategy ID and a time range:
+
 const response = await fetch('https://api.youtrade.ai/api/v1/backtest/run', {
-  method: 'POST',
+
+  method: 'POST',<CodeGroup>
+
   headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    strategy_id: 'strat_abc123',
-    timerange: '20240101-20241001',
-    stake_amount: 100,
-    max_open_trades: 3
-  })
-});
+
+    'Authorization': 'Bearer YOUR_API_KEY',```bash Bash
+
+    'Content-Type': 'application/json'curl -X POST https://api.youtrade.ai/api/v1/backtest/run \
+
+  },  -H "Authorization: Bearer YOUR_API_KEY" \
+
+  body: JSON.stringify({  -H "Content-Type: application/json" \
+
+    strategy_id: 'strat_abc123',  -d '{
+
+    timerange: '20240101-20241001',    "strategy_id": "strat_abc123",
+
+    stake_amount: 100,    "timerange": "20240101-20241001",
+
+    max_open_trades: 3    "stake_amount": 100,
+
+  })    "max_open_trades": 3
+
+});  }'
+
+```
 
 const backtest = await response.json();
-console.log(`Backtest started: ${backtest.backtest_id}`);
-console.log(`Status: ${backtest.status}`);
+
+console.log(`Backtest started: ${backtest.backtest_id}`);```python Python
+
+```import requests
+
+
+
+</CodeGroup>response = requests.post(
+
+    "https://api.youtrade.ai/api/v1/backtest/run",
+
+### Response    headers={
+
+        "Authorization": "Bearer YOUR_API_KEY",
+
+```json        "Content-Type": "application/json"
+
+{    },
+
+  "backtest_id": "bt_xyz789",    json={
+
+  "strategy_id": "strat_abc123",        "strategy_id": "strat_abc123",
+
+  "status": "running",        "timerange": "20240101-20241001",
+
+  "progress": 0,        "stake_amount": 100,
+
+  "created_at": "2024-10-04T10:30:00Z",        "max_open_trades": 3
+
+  "estimated_completion": "2024-10-04T10:32:00Z"    }
+
+})
+
 ```
+
+backtest = response.json()
+
+---print(f"Backtest started: {backtest['backtest_id']}")
+
+print(f"Status: {backtest['status']}")
+
+## Check Backtest Status```
+
+
+
+Monitor your backtest progress:```javascript JavaScript
+
+const response = await fetch('https://api.youtrade.ai/api/v1/backtest/run', {
+
+<CodeGroup>  method: 'POST',
+
+  headers: {
+
+```bash Bash    'Authorization': 'Bearer YOUR_API_KEY',
+
+curl -X GET https://api.youtrade.ai/api/v1/backtest/bt_xyz789/status \    'Content-Type': 'application/json'
+
+  -H "Authorization: Bearer YOUR_API_KEY"  },
+
+```  body: JSON.stringify({
+
+    strategy_id: 'strat_abc123',
+
+```python Python    timerange: '20240101-20241001',
+
+import requests    stake_amount: 100,
+
+    max_open_trades: 3
+
+response = requests.get(  })
+
+    "https://api.youtrade.ai/api/v1/backtest/bt_xyz789/status",});
+
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+
+)const backtest = await response.json();
+
+console.log(`Backtest started: ${backtest.backtest_id}`);
+
+status = response.json()console.log(`Status: ${backtest.status}`);
+
+print(f"Progress: {status['progress']}%")```
+
+```
+
+</CodeGroup>
 
 </CodeGroup>
 
 ### Response
 
+---
+
 ```json
-{
+
+## Get Results{
+
   "backtest_id": "bt_xyz789",
-  "strategy_id": "strat_abc123",
+
+Retrieve comprehensive backtest results:  "strategy_id": "strat_abc123",
+
   "status": "running",
-  "progress": 0,
+
+<CodeGroup>  "progress": 0,
+
   "created_at": "2024-10-04T10:30:00Z",
-  "estimated_completion": "2024-10-04T10:32:00Z"
-}
+
+```bash Bash  "estimated_completion": "2024-10-04T10:32:00Z"
+
+curl -X GET https://api.youtrade.ai/api/v1/backtest/bt_xyz789/results \}
+
+  -H "Authorization: Bearer YOUR_API_KEY"```
+
 ```
 
 ---
 
-## Backtest Configuration
+```python Python
 
-### Essential Parameters
+import requests## Backtest Configuration
 
-<ParamField path="strategy_id" type="string" required>
-  The unique identifier of the strategy to backtest
+
+
+response = requests.get(### Essential Parameters
+
+    "https://api.youtrade.ai/api/v1/backtest/bt_xyz789/results",
+
+    headers={"Authorization": "Bearer YOUR_API_KEY"}<ParamField path="strategy_id" type="string" required>
+
+)  The unique identifier of the strategy to backtest
+
 </ParamField>
 
-<ParamField path="timerange" type="string" required>
-  Date range for backtesting in format `YYYYMMDD-YYYYMMDD` (e.g., `20240101-20241001`)
-</ParamField>
+results = response.json()
 
-<ParamField path="stake_amount" type="number" default="100">
+print(f"Total Profit: ${results['summary']['total_profit']:.2f}")<ParamField path="timerange" type="string" required>
+
+print(f"Win Rate: {results['summary']['win_rate']:.1f}%")  Date range for backtesting in format `YYYYMMDD-YYYYMMDD` (e.g., `20240101-20241001`)
+
+```</ParamField>
+
+
+
+</CodeGroup><ParamField path="stake_amount" type="number" default="100">
+
   Amount to invest per trade (in quote currency, e.g., USDT)
-</ParamField>
 
-<ParamField path="max_open_trades" type="integer" default="3">
+---</ParamField>
+
+
+
+## Key Metrics<ParamField path="max_open_trades" type="integer" default="3">
+
   Maximum number of trades that can be open simultaneously
-</ParamField>
 
-### Advanced Parameters
+Understanding your backtest results:</ParamField>
 
-<ParamField path="starting_balance" type="number" default="1000">
-  Initial capital for the backtest
-</ParamField>
+
+
+- **Total Profit**: Absolute profit in quote currency### Advanced Parameters
+
+- **ROI %**: Return on Investment percentage
+
+- **Win Rate**: Percentage of profitable trades<ParamField path="starting_balance" type="number" default="1000">
+
+- **Max Drawdown**: Largest peak-to-trough decline  Initial capital for the backtest
+
+- **Sharpe Ratio**: Risk-adjusted returns (higher is better)</ParamField>
+
+- **Profit Factor**: Gross profit ÷ Gross loss
 
 <ParamField path="pairs" type="array">
-  Specific trading pairs to test. If omitted, uses strategy's default pairs
-  
-  ```json
-  ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
-  ```
-</ParamField>
+
+<Note>  Specific trading pairs to test. If omitted, uses strategy's default pairs
+
+A good strategy typically has:  
+
+- ROI >20% annually  ```json
+
+- Win Rate >55%  ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
+
+- Max Drawdown <15%  ```
+
+- Sharpe Ratio >1.0</ParamField>
+
+</Note>
 
 <ParamField path="timeframe" type="string" default="5m">
-  Candle timeframe: `1m`, `5m`, `15m`, `1h`, `4h`, `1d`
+
+---  Candle timeframe: `1m`, `5m`, `15m`, `1h`, `4h`, `1d`
+
 </ParamField>
+
+## Next Steps
 
 <ParamField path="fee" type="number" default="0.001">
-  Trading fee percentage (0.001 = 0.1%)
-</ParamField>
 
-<ParamField path="enable_protections" type="boolean" default="true">
-  Enable strategy protection mechanisms (cooldown periods, max drawdown stops)
-</ParamField>
+<CardGroup cols={2}>  Trading fee percentage (0.001 = 0.1%)
 
-<ParamField path="dry_run_wallet" type="number">
-  Override starting balance for testing different capital amounts
-</ParamField>
+  <Card title="Optimize Parameters" icon="sliders" href="/youtrade-api/guides/hyperopt-optimization"></ParamField>
 
----
+    Fine-tune your strategy settings
 
-## Complete Backtest Example
+  </Card><ParamField path="enable_protections" type="boolean" default="true">
 
-Here's a comprehensive example with all recommended settings:
+    Enable strategy protection mechanisms (cooldown periods, max drawdown stops)
+
+  <Card title="Deploy to Paper Trading" icon="flask" href="/youtrade-api/guides/paper-trading"></ParamField>
+
+    Test with live data and virtual money
+
+  </Card><ParamField path="dry_run_wallet" type="number">
+
+    Override starting balance for testing different capital amounts
+
+  <Card title="View Performance" icon="chart-line" href="/youtrade-api/guides/pull-data-reports"></ParamField>
+
+    Analyze detailed trading data
+
+  </Card>---
+
+  
+
+  <Card title="Go Live" icon="rocket" href="/youtrade-api/guides/live-deployment">## Complete Backtest Example
+
+    Deploy your validated strategy
+
+  </Card>Here's a comprehensive example with all recommended settings:
+
+</CardGroup>
 
 <CodeGroup>
 
+---
+
 ```bash Bash
-curl -X POST https://api.youtrade.ai/api/v1/backtest/run \
+
+## Related Resourcescurl -X POST https://api.youtrade.ai/api/v1/backtest/run \
+
   -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "strategy_id": "strat_vwap_macd_001",
-    "timerange": "20230101-20241001",
+
+- [Using YouTrade API](/youtrade-api/guides/using-api) - Authentication and basic API usage  -H "Content-Type: application/json" \
+
+- [Create from Existing Strategy](/youtrade-api/guides/create-from-existing) - Clone and modify strategies  -d '{
+
+- [Pull Data Reports](/youtrade-api/guides/pull-data-reports) - Analyze backtest data    "strategy_id": "strat_vwap_macd_001",
+
+- [Generate Strategy over MCP](/youtrade-api/guides/mcp-generation) - AI-assisted strategy creation    "timerange": "20230101-20241001",
+
     "starting_balance": 10000,
-    "stake_amount": 500,
-    "max_open_trades": 5,
-    "pairs": ["BTC/USDT", "ETH/USDT", "BNB/USDT"],
+
+<Note>    "stake_amount": 500,
+
+**Need Help?** Join our [Discord community](https://discord.gg/youtrade) or contact support at [support@youtrade.ai](mailto:support@youtrade.ai)    "max_open_trades": 5,
+
+</Note>    "pairs": ["BTC/USDT", "ETH/USDT", "BNB/USDT"],
+
     "timeframe": "5m",
     "fee": 0.001,
     "enable_protections": true,
