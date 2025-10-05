@@ -1,0 +1,802 @@
+---
+title: 'Generate Strategy over MCP'
+description: 'Use Model Context Protocol to create trading strategies directly from AI assistants'
+icon: 'robot'
+---
+
+## Overview
+
+The **Model Context Protocol (MCP)** allows AI assistants like Claude Desktop, Cursor, and other AI tools to interact directly with YouTrade's strategy builder. This means you can generate, test, and deploy trading strategies using natural language conversations with your AI assistant.
+
+<Info>
+MCP provides a standardized way for AI tools to access external systems. YouTrade's MCP server lets you create strategies, run backtests, and manage deployments without writing API calls manually.
+</Info>
+
+## What is MCP?
+
+Model Context Protocol is an open standard created by Anthropic that enables AI assistants to:
+
+- **Access external tools and data** through a standardized interface
+- **Maintain context** across multiple interactions
+- **Execute complex workflows** on behalf of users
+- **Integrate seamlessly** with local and cloud services
+
+### YouTrade MCP Server Features
+
+The YouTrade MCP server provides these capabilities:
+
+<CardGroup cols={2}>
+  <Card title="Strategy Creation" icon="wand-magic-sparkles">
+    Generate FreqTrade strategies from natural language descriptions
+  </Card>
+  
+  <Card title="Backtest Execution" icon="chart-line">
+    Run and monitor backtests on historical data
+  </Card>
+  
+  <Card title="Component Search" icon="magnifying-glass">
+    Browse and integrate pre-built trading components
+  </Card>
+  
+  <Card title="Strategy Management" icon="folder-tree">
+    List, clone, modify, and delete strategies
+  </Card>
+</CardGroup>
+
+## Prerequisites
+
+Before you begin, you'll need:
+
+- [ ] **Claude Desktop** (or another MCP-compatible AI assistant)
+- [ ] **YouTrade API Key** (get one from [dashboard.youtrade.ai](https://dashboard.youtrade.ai))
+- [ ] **Node.js 18+** (for running the MCP server)
+- [ ] **Basic understanding** of trading concepts
+
+<Note>
+While this guide focuses on Claude Desktop, the YouTrade MCP server works with any MCP-compatible client.
+</Note>
+
+## Installation Guide
+
+### Step 1: Install the YouTrade MCP Server
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install -g @youtrade/mcp-server
+    ```
+  </Tab>
+  
+  <Tab title="pnpm">
+    ```bash
+    pnpm add -g @youtrade/mcp-server
+    ```
+  </Tab>
+  
+  <Tab title="yarn">
+    ```bash
+    yarn global add @youtrade/mcp-server
+    ```
+  </Tab>
+</Tabs>
+
+Verify the installation:
+
+```bash
+youtrade-mcp --version
+```
+
+### Step 2: Configure Claude Desktop
+
+Add the YouTrade MCP server to your Claude Desktop configuration:
+
+<Tabs>
+  <Tab title="macOS">
+    Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+    
+    ```json
+    {
+      "mcpServers": {
+        "youtrade": {
+          "command": "youtrade-mcp",
+          "env": {
+            "YOUTRADE_API_KEY": "your-api-key-here"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Windows">
+    Edit `%APPDATA%\Claude\claude_desktop_config.json`:
+    
+    ```json
+    {
+      "mcpServers": {
+        "youtrade": {
+          "command": "youtrade-mcp.cmd",
+          "env": {
+            "YOUTRADE_API_KEY": "your-api-key-here"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Linux">
+    Edit `~/.config/Claude/claude_desktop_config.json`:
+    
+    ```json
+    {
+      "mcpServers": {
+        "youtrade": {
+          "command": "youtrade-mcp",
+          "env": {
+            "YOUTRADE_API_KEY": "your-api-key-here"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+**Security**: Never commit your API key to version control. Consider using environment variables or a secure key manager.
+</Warning>
+
+### Step 3: Restart Claude Desktop
+
+Close and reopen Claude Desktop to load the new MCP server configuration.
+
+### Step 4: Verify Connection
+
+In Claude Desktop, you should see the YouTrade tools available. You can verify by asking:
+
+```
+What YouTrade tools are available?
+```
+
+Claude should list available tools like:
+- `youtrade_create_strategy`
+- `youtrade_run_backtest`
+- `youtrade_search_components`
+- `youtrade_list_strategies`
+
+## Using MCP to Generate Strategies
+
+### Example 1: Create a Simple Strategy
+
+Simply describe your trading idea to Claude:
+
+<div className="conversation-example">
+
+**You:**
+```
+Create a trading strategy for BTC/USDT that:
+- Uses RSI indicator
+- Buys when RSI < 30 (oversold)
+- Sells when RSI > 70 (overbought)
+- Uses 15-minute timeframe
+- Has a 5% stop loss
+```
+
+**Claude:**
+```
+I'll create that RSI mean reversion strategy for you using the YouTrade 
+MCP server.
+
+[Uses youtrade_create_strategy tool]
+
+✅ Strategy created successfully!
+
+Strategy Details:
+- ID: 550e8400-e29b-41d4-a716-446655440000
+- Name: RSI Mean Reversion BTC
+- Timeframe: 15m
+- Pairs: BTC/USDT
+- Stop Loss: -5%
+
+The strategy uses:
+- RSI(14) indicator for momentum
+- Entry when RSI < 30 (oversold conditions)
+- Exit when RSI > 70 (overbought conditions)
+- Volume confirmation for entries
+
+Would you like me to run a backtest on this strategy?
+```
+
+</div>
+
+### Example 2: Create and Backtest
+
+Request both creation and testing in one go:
+
+<div className="conversation-example">
+
+**You:**
+```
+Create a MACD crossover strategy for ETH/USDT on 1h timeframe and 
+backtest it for the last 90 days.
+```
+
+**Claude:**
+```
+I'll create the MACD crossover strategy and run a backtest for you.
+
+[Uses youtrade_create_strategy tool]
+[Uses youtrade_run_backtest tool]
+
+✅ Strategy created and backtest started!
+
+Strategy: MACD Crossover ETH
+Backtest Period: Last 90 days
+Status: Running...
+
+I'll monitor the backtest progress. This typically takes 30-60 seconds.
+
+[Waits and checks status]
+
+📊 Backtest Results:
+
+Performance Metrics:
+- Total Trades: 24
+- Win Rate: 58.3%
+- Total Profit: +12.4%
+- Sharpe Ratio: 1.82
+- Max Drawdown: -8.2%
+
+Best Trade: +5.2%
+Worst Trade: -3.1%
+Average Win: +3.8%
+Average Loss: -2.1%
+
+The strategy shows promising results with a positive expectancy. 
+Would you like me to:
+1. Create variations with different parameters?
+2. Deploy this to dry-run mode?
+3. Analyze the trade distribution?
+```
+
+</div>
+
+### Example 3: Browse and Integrate Components
+
+Leverage the component library:
+
+<div className="conversation-example">
+
+**You:**
+```
+Search for volatility-based components and create a strategy that combines 
+Bollinger Bands with ATR for entries and exits.
+```
+
+**Claude:**
+```
+I'll search the component library for volatility indicators.
+
+[Uses youtrade_search_components tool]
+
+Found relevant components:
+1. Adaptive Bollinger Bands (⭐ 4.8, 2.3k downloads)
+2. ATR Volatility Filter (⭐ 4.6, 1.8k downloads)
+3. Keltner Channels (⭐ 4.5, 1.5k downloads)
+
+Creating a strategy that combines Bollinger Bands and ATR...
+
+[Uses youtrade_create_strategy tool]
+
+✅ Volatility Breakout Strategy Created!
+
+The strategy uses:
+- Bollinger Bands (20, 2) for price channels
+- ATR for dynamic stop losses
+- Entry: Price breaks above upper BB with high ATR
+- Exit: Price touches middle BB or ATR-based stop
+
+Entry Logic:
+- Close > Upper Bollinger Band
+- ATR > 20-period average (confirming volatility)
+- Volume > 1.5x average volume
+
+Exit Logic:
+- Close < Middle Bollinger Band (mean reversion)
+- Stop Loss: Entry price - (2 × ATR)
+- Take Profit: Entry price + (3 × ATR)
+
+Would you like me to backtest this strategy?
+```
+
+</div>
+
+## Advanced MCP Workflows
+
+### Workflow 1: Strategy Optimization
+
+<Steps>
+  <Step title="Create Base Strategy">
+    ```
+    Create a trend-following strategy using EMA crossovers for BTC/USDT
+    ```
+  </Step>
+  
+  <Step title="Run Initial Backtest">
+    ```
+    Backtest this strategy for the last 6 months
+    ```
+  </Step>
+  
+  <Step title="Analyze Results">
+    ```
+    What were the weak points in this strategy?
+    ```
+  </Step>
+  
+  <Step title="Create Variations">
+    ```
+    Create 3 variations with different EMA periods and backtest each
+    ```
+  </Step>
+  
+  <Step title="Compare Performance">
+    ```
+    Compare all 4 strategies and show me which performed best
+    ```
+  </Step>
+  
+  <Step title="Deploy Winner">
+    ```
+    Deploy the best performing strategy to Vultr in dry-run mode
+    ```
+  </Step>
+</Steps>
+
+### Workflow 2: Multi-Pair Strategy
+
+<div className="conversation-example">
+
+**You:**
+```
+Create a strategy that works across BTC, ETH, and SOL. Use the same 
+indicators but optimize parameters for each pair individually.
+```
+
+**Claude:**
+```
+I'll create a multi-pair adaptive strategy for you.
+
+[Uses youtrade_create_strategy tool multiple times]
+
+✅ Created 3 optimized strategies:
+
+1. BTC/USDT Strategy
+   - RSI Period: 14
+   - Buy Threshold: 28
+   - Sell Threshold: 72
+   
+2. ETH/USDT Strategy
+   - RSI Period: 12
+   - Buy Threshold: 30
+   - Sell Threshold: 70
+   
+3. SOL/USDT Strategy
+   - RSI Period: 10
+   - Buy Threshold: 25
+   - Sell Threshold: 75
+
+Each strategy is tuned for the specific volatility characteristics of 
+its trading pair. Would you like me to run comparative backtests?
+```
+
+</div>
+
+### Workflow 3: Risk Management Integration
+
+<div className="conversation-example">
+
+**You:**
+```
+Take my existing strategy (ID: abc-123) and add sophisticated risk 
+management: position sizing based on ATR, maximum 3% risk per trade, 
+and daily loss limit of 10%.
+```
+
+**Claude:**
+```
+I'll enhance your strategy with advanced risk management.
+
+[Uses youtrade_clone_strategy tool]
+[Modifies the strategy with risk parameters]
+
+✅ Enhanced Strategy Created!
+
+New Risk Management Features:
+- Position Size: Calculated as (Account Balance × 3%) / ATR
+- Maximum Risk Per Trade: 3%
+- Daily Loss Limit: 10% (bot stops trading if reached)
+- Maximum Concurrent Trades: 3
+- Risk-Reward Ratio: Minimum 1:2
+
+Stop Loss Logic:
+- Dynamic stop: Entry Price - (2 × ATR)
+- Trailing stop activates at +1% profit
+- Trail by 1 × ATR
+
+Position Sizing Example:
+- If ATR = $100 and account = $10,000
+- Risk amount = $300 (3%)
+- Position size = $300 / $100 = 3 units
+
+Would you like me to backtest this with different account sizes?
+```
+
+</div>
+
+## Available MCP Tools
+
+### Strategy Tools
+
+| Tool Name | Description | Example Usage |
+|-----------|-------------|---------------|
+| `youtrade_create_strategy` | Generate new strategy from description | "Create a momentum strategy" |
+| `youtrade_list_strategies` | List all your strategies | "Show my strategies" |
+| `youtrade_get_strategy` | Get details of a specific strategy | "Show strategy abc-123" |
+| `youtrade_clone_strategy` | Clone and modify existing strategy | "Clone strategy abc-123 for ETH" |
+| `youtrade_delete_strategy` | Delete a strategy | "Delete strategy abc-123" |
+
+### Backtest Tools
+
+| Tool Name | Description | Example Usage |
+|-----------|-------------|---------------|
+| `youtrade_run_backtest` | Start a backtest | "Backtest for 90 days" |
+| `youtrade_get_backtest` | Get backtest results | "Show backtest results" |
+| `youtrade_compare_strategies` | Compare multiple strategies | "Compare strategies A, B, C" |
+
+### Component Tools
+
+| Tool Name | Description | Example Usage |
+|-----------|-------------|---------------|
+| `youtrade_search_components` | Search component library | "Find RSI components" |
+| `youtrade_get_component` | Get component details | "Show component details" |
+
+### Deployment Tools
+
+| Tool Name | Description | Example Usage |
+|-----------|-------------|---------------|
+| `youtrade_deploy_strategy` | Deploy to cloud | "Deploy to Vultr dry-run" |
+| `youtrade_get_deployment` | Check deployment status | "Check deployment status" |
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Be Specific in Your Descriptions">
+    The more detailed your strategy description, the better Claude can create it:
+    
+    ❌ Bad: "Create a BTC strategy"
+    ✅ Good: "Create a BTC/USDT strategy using RSI < 30 for entries, RSI > 70 for exits, on 15m timeframe with 5% stop loss"
+  </Accordion>
+
+  <Accordion title="Always Backtest Before Deploying">
+    Never deploy a strategy without backtesting first:
+    
+    ```
+    Create strategy → Backtest → Analyze → Deploy
+    ```
+  </Accordion>
+
+  <Accordion title="Use Iterative Refinement">
+    Start simple and add complexity:
+    
+    ```
+    1. Create basic strategy
+    2. Backtest and analyze
+    3. Ask Claude: "How can we improve this?"
+    4. Implement improvements
+    5. Backtest again
+    6. Repeat until satisfied
+    ```
+  </Accordion>
+
+  <Accordion title="Leverage Claude's Analysis">
+    Ask Claude to analyze results and suggest improvements:
+    
+    ```
+    "Why did this strategy lose money in March?"
+    "What market conditions does this strategy work best in?"
+    "How can we reduce the maximum drawdown?"
+    ```
+  </Accordion>
+
+  <Accordion title="Keep Track of Strategy IDs">
+    Ask Claude to maintain a log of your strategies:
+    
+    ```
+    "Keep a list of all strategies we create today with their 
+    performance metrics"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Example Conversation: Full Workflow
+
+Here's a complete example of developing a strategy using MCP:
+
+<div className="conversation-example">
+
+**You:**
+```
+I want to create a conservative strategy for BTC/USDT that focuses on 
+consistent small gains rather than big wins. It should trade on the 1h 
+timeframe.
+```
+
+**Claude:**
+```
+I'll create a conservative, consistent-gains strategy for you.
+
+For conservative trading, I'll use:
+- Mean reversion approach (more predictable than trend following)
+- Multiple confirmation indicators
+- Tight profit targets with trailing stops
+- Strict risk management
+
+[Uses youtrade_create_strategy tool]
+
+✅ Created: Conservative BTC Scalper
+
+Strategy Overview:
+- Timeframe: 1h
+- Type: Mean Reversion
+- Risk Level: Low
+- Target Win Rate: 65-70%
+- Risk/Reward: 1:1.5
+
+Entry Conditions:
+- RSI < 40 (mildly oversold, not extreme)
+- Price > EMA(200) (long-term uptrend only)
+- MACD histogram rising (momentum building)
+- Volume > 20-period average
+
+Exit Conditions:
+- Take Profit: +2% (small, consistent gains)
+- Stop Loss: -1.5% (tight risk control)
+- Trailing Stop: Activates at +1%, trails by 0.5%
+
+Let me backtest this for the last 90 days...
+
+[Uses youtrade_run_backtest tool]
+
+📊 Backtest Results (90 days):
+
+Performance:
+- Total Trades: 45
+- Win Rate: 68.9% ✅ (target: 65-70%)
+- Average Win: +2.1%
+- Average Loss: -1.4%
+- Total Profit: +18.7%
+
+Risk Metrics:
+- Sharpe Ratio: 2.14 (excellent)
+- Max Drawdown: -4.2% (very conservative)
+- Profit Factor: 1.89
+
+Monthly Breakdown:
+- Month 1: +6.2%
+- Month 2: +5.8%
+- Month 3: +6.7%
+
+The strategy meets your conservative criteria with consistent monthly 
+returns and low drawdowns. The 68.9% win rate with 1:1.5 RR gives 
+positive expectancy.
+
+Would you like me to:
+1. Deploy this to dry-run mode for live testing?
+2. Create variations with different profit targets?
+3. Analyze the losing trades to see if we can improve further?
+```
+
+**You:**
+```
+Let's analyze the losing trades and see if we can reduce them without 
+hurting the win rate.
+```
+
+**Claude:**
+```
+[Analyzes backtest data]
+
+Losing Trade Analysis:
+
+Pattern Found: 62% of losses occurred during high volatility spikes 
+(ATR > 1.5x average).
+
+Recommendation: Add a volatility filter.
+
+Let me create an improved version...
+
+[Uses youtrade_clone_strategy tool]
+
+✅ Created: Conservative BTC Scalper v2
+
+Added Filter:
+- ATR must be < 1.5x of 20-period average
+- This filters out extreme volatility periods
+
+Running comparative backtest...
+
+[Uses youtrade_compare_strategies tool]
+
+📊 Comparison Results:
+
+Original Strategy:
+- Win Rate: 68.9%
+- Total Profit: +18.7%
+- Max Drawdown: -4.2%
+
+Improved Strategy (v2):
+- Win Rate: 74.4% ✅ (+5.5%)
+- Total Profit: +16.2% (slightly lower)
+- Max Drawdown: -2.8% ✅ (-33% improvement)
+
+Trade-off Analysis:
+✅ Win rate improved from 69% to 74%
+✅ Maximum drawdown reduced by 33%
+⚠️ Slightly fewer trades (38 vs 45)
+⚠️ Total profit 2.5% lower (but more consistent)
+
+The improved version is more conservative with better risk metrics. 
+It trades less frequently but more accurately.
+
+Which version would you prefer to deploy?
+```
+
+**You:**
+```
+Deploy v2 to Vultr in dry-run mode
+```
+
+**Claude:**
+```
+[Uses youtrade_deploy_strategy tool]
+
+🚀 Deployment Started!
+
+Deployment Details:
+- Strategy: Conservative BTC Scalper v2
+- Provider: Vultr
+- Region: New York (ewr)
+- Instance: vc2-1c-2gb
+- Mode: Dry Run (paper trading)
+- Status: Provisioning...
+
+Deployment Progress:
+✅ Instance created
+✅ FreqTrade installed
+✅ Strategy uploaded
+✅ Configuration applied
+⏳ Starting trading bot...
+
+✅ Deployment Complete!
+
+Access Information:
+- FreqUI: https://165.232.45.123:8080
+- Username: freqtrade
+- Password: [sent to your email]
+
+The bot is now running in dry-run mode. You can:
+- Monitor trades in real-time via FreqUI
+- View performance metrics
+- Stop/start the bot as needed
+
+I'll check the status in 24 hours and report the first day's 
+performance. Would you like me to set up monitoring alerts?
+```
+
+</div>
+
+## Troubleshooting
+
+### MCP Server Not Connecting
+
+**Issue:** Claude doesn't see YouTrade tools
+
+**Solutions:**
+1. Verify the MCP server is installed:
+   ```bash
+   which youtrade-mcp  # macOS/Linux
+   where youtrade-mcp  # Windows
+   ```
+
+2. Check the configuration file path is correct
+3. Ensure your API key is valid
+4. Restart Claude Desktop completely
+
+### API Key Errors
+
+**Issue:** Authentication failed
+
+**Solutions:**
+1. Verify your API key in the config:
+   ```bash
+   cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
+   ```
+
+2. Generate a new API key from [dashboard.youtrade.ai](https://dashboard.youtrade.ai)
+3. Update the config file and restart Claude
+
+### Rate Limiting
+
+**Issue:** Too many requests
+
+**Solution:** The MCP server respects YouTrade's rate limits. If you hit the limit:
+- Wait for the reset time (shown in error message)
+- Upgrade your plan for higher limits
+- Batch operations when possible
+
+### Backtest Timeouts
+
+**Issue:** Backtests taking too long
+
+**Solutions:**
+1. Reduce the backtest period:
+   ```
+   "Backtest for 30 days instead of 90"
+   ```
+
+2. Use a simpler strategy for testing
+3. Check server status at [status.youtrade.ai](https://status.youtrade.ai)
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="MCP Protocol Docs" icon="book" href="https://modelcontextprotocol.io">
+    Learn more about Model Context Protocol
+  </Card>
+  
+  <Card title="Claude Desktop" icon="download" href="https://claude.ai/download">
+    Download Claude Desktop application
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Explore the full YouTrade API
+  </Card>
+  
+  <Card title="Strategy Examples" icon="lightbulb" href="/youtrade-api/guides/examples">
+    Browse example strategies
+  </Card>
+</CardGroup>
+
+<Note>
+**Pro Tip**: You can use MCP with other tools like Cursor IDE, Continue.dev, or any MCP-compatible client. The YouTrade MCP server works anywhere MCP is supported!
+</Note>
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Can I use MCP with other AI assistants?">
+    Yes! While this guide focuses on Claude Desktop, the YouTrade MCP server works with any MCP-compatible client including Cursor, Continue.dev, and custom implementations.
+  </Accordion>
+
+  <Accordion title="Is my API key secure when using MCP?">
+    Yes. The API key is stored locally in your configuration file and never sent to Claude or Anthropic. It's only used by the local MCP server to communicate with YouTrade's API.
+  </Accordion>
+
+  <Accordion title="Can I create custom MCP tools?">
+    Yes! The YouTrade MCP server is open source. You can extend it with custom tools or modify existing ones. See the [GitHub repository](https://github.com/youtrade/mcp-server) for details.
+  </Accordion>
+
+  <Accordion title="What's the difference between MCP and direct API calls?">
+    MCP provides a conversational interface through AI assistants, making it easier to create strategies without writing code. Direct API calls give you more control but require programming knowledge. Use MCP for rapid prototyping and exploration, API calls for production automation.
+  </Accordion>
+
+  <Accordion title="Can I run the MCP server on a remote machine?">
+    Yes, but you'll need to configure Claude Desktop to connect to the remote server. See the [MCP documentation](https://modelcontextprotocol.io) for remote server setup.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+**Remember**: Even with MCP making strategy creation easy, always practice responsible risk management. Start with small amounts, use dry-run mode, and never risk money you can't afford to lose.
+</Warning>
