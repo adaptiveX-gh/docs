@@ -1,0 +1,1274 @@
+---
+title: 'Backtesting & Validation'
+description: 'Test and validate your trading strategies with historical data before risking real capital'
+---
+
+## Overview
+
+Backtesting is the critical step between strategy creation and live deployment. It allows you to validate your strategy's performance using historical market data, identify potential issues, and optimize parameters before risking real capital.
+
+YouTrade API provides comprehensive backtesting capabilities that simulate how your strategy would have performed in the past, giving you confidence in its potential future performance.
+
+<Warning>
+**Past performance does not guarantee future results.** Backtesting is a validation tool, not a prediction tool. Always start with paper trading before going live.
+</Warning>
+
+---
+
+## What is Backtesting?
+
+Backtesting simulates your strategy's trades using historical price data to evaluate:
+
+- **Profitability**: Total profit/loss and ROI
+- **Risk Metrics**: Maximum drawdown, win rate, risk-reward ratio
+- **Trade Statistics**: Number of trades, average duration, entry/exit performance
+- **Market Conditions**: How the strategy performs in different market environments
+
+### Why Backtest?
+
+<AccordionGroup>
+  <Accordion title="✅ Validate Strategy Logic" icon="check-circle">
+    Ensure your entry and exit conditions work as intended without bugs or logical errors.
+  </Accordion>
+  
+  <Accordion title="📊 Measure Performance" icon="chart-line">
+    Get concrete metrics on profitability, win rate, drawdown, and other key performance indicators.
+  </Accordion>
+  
+  <Accordion title="🔍 Identify Edge Cases" icon="magnifying-glass">
+    Discover how your strategy behaves in extreme market conditions, crashes, or low-volume periods.
+  </Accordion>
+  
+  <Accordion title="⚙️ Optimize Parameters" icon="sliders">
+    Find the best settings for indicators, stop-loss levels, and other configurable parameters.
+  </Accordion>
+  
+  <Accordion title="💰 Build Confidence" icon="shield-check">
+    Gain confidence in your strategy before risking real money in live trading.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Quick Start: Run Your First Backtest
+
+The simplest way to backtest a strategy is to provide the strategy ID and a time range:
+
+<CodeGroup>
+
+```bash Bash
+curl -X POST https://api.youtrade.ai/api/v1/backtest/run \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "strategy_id": "strat_abc123",
+    "timerange": "20240101-20241001",
+    "stake_amount": 100,
+    "max_open_trades": 3
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.youtrade.ai/api/v1/backtest/run",
+    headers={
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    },
+    json={
+        "strategy_id": "strat_abc123",
+        "timerange": "20240101-20241001",
+        "stake_amount": 100,
+        "max_open_trades": 3
+    }
+)
+
+backtest = response.json()
+print(f"Backtest started: {backtest['backtest_id']}")
+print(f"Status: {backtest['status']}")
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.youtrade.ai/api/v1/backtest/run', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    strategy_id: 'strat_abc123',
+    timerange: '20240101-20241001',
+    stake_amount: 100,
+    max_open_trades: 3
+  })
+});
+
+const backtest = await response.json();
+console.log(`Backtest started: ${backtest.backtest_id}`);
+console.log(`Status: ${backtest.status}`);
+```
+
+</CodeGroup>
+
+### Response
+
+```json
+{
+  "backtest_id": "bt_xyz789",
+  "strategy_id": "strat_abc123",
+  "status": "running",
+  "progress": 0,
+  "created_at": "2024-10-04T10:30:00Z",
+  "estimated_completion": "2024-10-04T10:32:00Z"
+}
+```
+
+---
+
+## Backtest Configuration
+
+### Essential Parameters
+
+<ParamField path="strategy_id" type="string" required>
+  The unique identifier of the strategy to backtest
+</ParamField>
+
+<ParamField path="timerange" type="string" required>
+  Date range for backtesting in format `YYYYMMDD-YYYYMMDD` (e.g., `20240101-20241001`)
+</ParamField>
+
+<ParamField path="stake_amount" type="number" default="100">
+  Amount to invest per trade (in quote currency, e.g., USDT)
+</ParamField>
+
+<ParamField path="max_open_trades" type="integer" default="3">
+  Maximum number of trades that can be open simultaneously
+</ParamField>
+
+### Advanced Parameters
+
+<ParamField path="starting_balance" type="number" default="1000">
+  Initial capital for the backtest
+</ParamField>
+
+<ParamField path="pairs" type="array">
+  Specific trading pairs to test. If omitted, uses strategy's default pairs
+  
+  ```json
+  ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
+  ```
+</ParamField>
+
+<ParamField path="timeframe" type="string" default="5m">
+  Candle timeframe: `1m`, `5m`, `15m`, `1h`, `4h`, `1d`
+</ParamField>
+
+<ParamField path="fee" type="number" default="0.001">
+  Trading fee percentage (0.001 = 0.1%)
+</ParamField>
+
+<ParamField path="enable_protections" type="boolean" default="true">
+  Enable strategy protection mechanisms (cooldown periods, max drawdown stops)
+</ParamField>
+
+<ParamField path="dry_run_wallet" type="number">
+  Override starting balance for testing different capital amounts
+</ParamField>
+
+---
+
+## Complete Backtest Example
+
+Here's a comprehensive example with all recommended settings:
+
+<CodeGroup>
+
+```bash Bash
+curl -X POST https://api.youtrade.ai/api/v1/backtest/run \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "strategy_id": "strat_vwap_macd_001",
+    "timerange": "20230101-20241001",
+    "starting_balance": 10000,
+    "stake_amount": 500,
+    "max_open_trades": 5,
+    "pairs": ["BTC/USDT", "ETH/USDT", "BNB/USDT"],
+    "timeframe": "5m",
+    "fee": 0.001,
+    "enable_protections": true,
+    "tags": ["production-test", "q4-2024"]
+  }'
+```
+
+```python Python
+import requests
+
+backtest_config = {
+    "strategy_id": "strat_vwap_macd_001",
+    "timerange": "20230101-20241001",
+    "starting_balance": 10000,
+    "stake_amount": 500,
+    "max_open_trades": 5,
+    "pairs": ["BTC/USDT", "ETH/USDT", "BNB/USDT"],
+    "timeframe": "5m",
+    "fee": 0.001,
+    "enable_protections": True,
+    "tags": ["production-test", "q4-2024"]
+}
+
+response = requests.post(
+    "https://api.youtrade.ai/api/v1/backtest/run",
+    headers={
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    },
+    json=backtest_config
+)
+
+result = response.json()
+print(f"Backtest ID: {result['backtest_id']}")
+```
+
+```javascript JavaScript
+const backtestConfig = {
+  strategy_id: 'strat_vwap_macd_001',
+  timerange: '20230101-20241001',
+  starting_balance: 10000,
+  stake_amount: 500,
+  max_open_trades: 5,
+  pairs: ['BTC/USDT', 'ETH/USDT', 'BNB/USDT'],
+  timeframe: '5m',
+  fee: 0.001,
+  enable_protections: true,
+  tags: ['production-test', 'q4-2024']
+};
+
+const response = await fetch('https://api.youtrade.ai/api/v1/backtest/run', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(backtestConfig)
+});
+
+const result = await response.json();
+console.log(`Backtest ID: ${result.backtest_id}`);
+```
+
+</CodeGroup>
+
+---
+
+## Monitoring Backtest Progress
+
+Backtests can take several minutes to complete depending on the timerange and number of pairs. Check the status:
+
+<CodeGroup>
+
+```bash Bash
+curl -X GET https://api.youtrade.ai/api/v1/backtest/bt_xyz789/status \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+import time
+
+backtest_id = "bt_xyz789"
+
+while True:
+    response = requests.get(
+        f"https://api.youtrade.ai/api/v1/backtest/{backtest_id}/status",
+        headers={"Authorization": "Bearer YOUR_API_KEY"}
+    )
+    
+    status = response.json()
+    print(f"Progress: {status['progress']}% - {status['status']}")
+    
+    if status['status'] in ['completed', 'failed']:
+        break
+    
+    time.sleep(5)  # Check every 5 seconds
+
+print(f"Final status: {status['status']}")
+```
+
+```javascript JavaScript
+const backtestId = 'bt_xyz789';
+
+async function checkStatus() {
+  const response = await fetch(
+    `https://api.youtrade.ai/api/v1/backtest/${backtestId}/status`,
+    {
+      headers: { 'Authorization': 'Bearer YOUR_API_KEY' }
+    }
+  );
+  
+  const status = await response.json();
+  console.log(`Progress: ${status.progress}% - ${status.status}`);
+  
+  if (status.status === 'completed' || status.status === 'failed') {
+    return status;
+  }
+  
+  // Check again in 5 seconds
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  return checkStatus();
+}
+
+const finalStatus = await checkStatus();
+console.log(`Final status: ${finalStatus.status}`);
+```
+
+</CodeGroup>
+
+### Status Response
+
+```json
+{
+  "backtest_id": "bt_xyz789",
+  "status": "running",
+  "progress": 67,
+  "current_date": "2024-05-15",
+  "total_trades": 145,
+  "estimated_completion": "2024-10-04T10:32:00Z"
+}
+```
+
+---
+
+## Retrieving Backtest Results
+
+Once the backtest completes, retrieve comprehensive results:
+
+<CodeGroup>
+
+```bash Bash
+curl -X GET https://api.youtrade.ai/api/v1/backtest/bt_xyz789/results \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.youtrade.ai/api/v1/backtest/bt_xyz789/results",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+results = response.json()
+
+# Access key metrics
+print(f"Total Profit: ${results['summary']['total_profit']:.2f}")
+print(f"Win Rate: {results['summary']['win_rate']:.1f}%")
+print(f"Max Drawdown: {results['summary']['max_drawdown']:.1f}%")
+print(f"Total Trades: {results['summary']['total_trades']}")
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.youtrade.ai/api/v1/backtest/bt_xyz789/results',
+  {
+    headers: { 'Authorization': 'Bearer YOUR_API_KEY' }
+  }
+);
+
+const results = await response.json();
+
+// Access key metrics
+console.log(`Total Profit: $${results.summary.total_profit.toFixed(2)}`);
+console.log(`Win Rate: ${results.summary.win_rate.toFixed(1)}%`);
+console.log(`Max Drawdown: ${results.summary.max_drawdown.toFixed(1)}%`);
+console.log(`Total Trades: ${results.summary.total_trades}`);
+```
+
+</CodeGroup>
+
+### Results Structure
+
+<Tabs>
+  <Tab title="Summary Metrics">
+    ```json
+    {
+      "backtest_id": "bt_xyz789",
+      "strategy_id": "strat_vwap_macd_001",
+      "summary": {
+        "total_profit": 2847.50,
+        "total_profit_percent": 28.48,
+        "roi_percent": 28.48,
+        "total_trades": 238,
+        "winning_trades": 156,
+        "losing_trades": 82,
+        "win_rate": 65.5,
+        "avg_profit_per_trade": 11.96,
+        "avg_profit_percent": 1.20,
+        "max_drawdown": 8.7,
+        "max_drawdown_abs": 870.00,
+        "sharpe_ratio": 1.85,
+        "sortino_ratio": 2.34,
+        "profit_factor": 1.92,
+        "expectancy": 11.96,
+        "avg_holding_time": "4h 32m",
+        "best_trade": 245.80,
+        "worst_trade": -98.40,
+        "starting_balance": 10000,
+        "final_balance": 12847.50
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Trade List">
+    ```json
+    {
+      "trades": [
+        {
+          "trade_id": 1,
+          "pair": "BTC/USDT",
+          "open_date": "2023-01-05 10:30:00",
+          "close_date": "2023-01-05 15:45:00",
+          "open_rate": 16850.50,
+          "close_rate": 17120.30,
+          "amount": 0.0297,
+          "profit_abs": 8.01,
+          "profit_percent": 1.60,
+          "duration": "5h 15m",
+          "entry_tag": "vwap_cross_up",
+          "exit_reason": "roi"
+        },
+        {
+          "trade_id": 2,
+          "pair": "ETH/USDT",
+          "open_date": "2023-01-06 08:15:00",
+          "close_date": "2023-01-06 12:30:00",
+          "open_rate": 1245.80,
+          "close_rate": 1262.40,
+          "amount": 0.401,
+          "profit_abs": 6.66,
+          "profit_percent": 1.33,
+          "duration": "4h 15m",
+          "entry_tag": "macd_golden_cross",
+          "exit_reason": "roi"
+        }
+      ]
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Performance by Pair">
+    ```json
+    {
+      "pair_performance": [
+        {
+          "pair": "BTC/USDT",
+          "trades": 95,
+          "profit_abs": 1420.50,
+          "profit_percent": 14.21,
+          "win_rate": 68.4,
+          "avg_duration": "5h 10m"
+        },
+        {
+          "pair": "ETH/USDT",
+          "trades": 87,
+          "profit_abs": 980.30,
+          "profit_percent": 9.80,
+          "win_rate": 63.2,
+          "avg_duration": "4h 05m"
+        },
+        {
+          "pair": "BNB/USDT",
+          "trades": 56,
+          "profit_abs": 446.70,
+          "profit_percent": 4.47,
+          "win_rate": 62.5,
+          "avg_duration": "3h 45m"
+        }
+      ]
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Monthly Breakdown">
+    ```json
+    {
+      "monthly_performance": [
+        {
+          "month": "2023-01",
+          "trades": 28,
+          "profit_abs": 340.50,
+          "profit_percent": 3.41,
+          "win_rate": 71.4
+        },
+        {
+          "month": "2023-02",
+          "trades": 24,
+          "profit_abs": 215.80,
+          "profit_percent": 2.16,
+          "win_rate": 62.5
+        },
+        {
+          "month": "2023-03",
+          "trades": 31,
+          "profit_abs": -125.30,
+          "profit_percent": -1.25,
+          "win_rate": 48.4
+        }
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Understanding Key Metrics
+
+### Profitability Metrics
+
+<CardGroup cols={2}>
+  <Card title="Total Profit" icon="dollar-sign">
+    Absolute profit in quote currency (e.g., USDT)
+    
+    **Good**: Positive and significant relative to starting balance
+    
+    **Bad**: Negative or barely positive after many trades
+  </Card>
+  
+  <Card title="ROI %" icon="percent">
+    Return on Investment percentage
+    
+    **Good**: >20% annually, >50% for aggressive strategies
+    
+    **Bad**: <5% (not worth the risk)
+  </Card>
+  
+  <Card title="Profit Factor" icon="scale-balanced">
+    Gross profit ÷ Gross loss
+    
+    **Good**: >1.5 (profitable strategy)
+    
+    **Bad**: <1.2 (barely profitable, high risk)
+  </Card>
+  
+  <Card title="Expectancy" icon="chart-line">
+    Average profit per trade
+    
+    **Good**: Positive and covers fees + slippage
+    
+    **Bad**: Negative or barely positive
+  </Card>
+</CardGroup>
+
+### Risk Metrics
+
+<CardGroup cols={2}>
+  <Card title="Max Drawdown %" icon="arrow-trend-down">
+    Largest peak-to-trough decline
+    
+    **Good**: <10% for conservative, <20% for aggressive
+    
+    **Bad**: >30% (high risk of ruin)
+  </Card>
+  
+  <Card title="Sharpe Ratio" icon="shield">
+    Risk-adjusted return (higher is better)
+    
+    **Good**: >1.5 (excellent risk/reward)
+    
+    **Bad**: <0.5 (poor risk-adjusted performance)
+  </Card>
+  
+  <Card title="Sortino Ratio" icon="shield-check">
+    Like Sharpe but focuses on downside risk
+    
+    **Good**: >2.0 (excellent downside protection)
+    
+    **Bad**: <1.0 (high downside volatility)
+  </Card>
+  
+  <Card title="Win Rate %" icon="trophy">
+    Percentage of winning trades
+    
+    **Good**: >55% (consistently profitable)
+    
+    **Bad**: <45% (losing more than winning)
+  </Card>
+</CardGroup>
+
+### Trade Statistics
+
+<CardGroup cols={2}>
+  <Card title="Total Trades" icon="arrows-rotate">
+    Number of completed trades
+    
+    **Good**: >100 (statistically significant)
+    
+    **Bad**: <30 (not enough data)
+  </Card>
+  
+  <Card title="Avg Holding Time" icon="clock">
+    Average trade duration
+    
+    Should match your strategy type (scalping: <1h, swing: >1d)
+  </Card>
+  
+  <Card title="Best/Worst Trade" icon="arrow-up-arrow-down">
+    Largest winning and losing trades
+    
+    **Warning**: If best trade = most of profit, strategy may be lucky
+  </Card>
+  
+  <Card title="Avg Profit/Trade" icon="money-bill-trend-up">
+    Average profit per trade
+    
+    **Must be**: Positive and >2x trading fees
+  </Card>
+</CardGroup>
+
+---
+
+## Validation Checklist
+
+Before deploying a strategy to live trading, validate these criteria:
+
+<Steps>
+  <Step title="Profitability Check">
+    ✅ Total profit is positive  
+    ✅ ROI is >15% annually (adjust for risk tolerance)  
+    ✅ Profit factor is >1.5  
+    ✅ Expectancy is positive after fees
+  </Step>
+  
+  <Step title="Risk Assessment">
+    ✅ Max drawdown is <15% (adjust for risk tolerance)  
+    ✅ Sharpe ratio is >1.0  
+    ✅ Win rate is >50%  
+    ✅ Worst trade doesn't wipe out >5% of capital
+  </Step>
+  
+  <Step title="Statistical Significance">
+    ✅ At least 100 trades executed  
+    ✅ Tested on minimum 6 months of data  
+    ✅ Performance is consistent across different months  
+    ✅ Multiple pairs show profitability (not reliant on one pair)
+  </Step>
+  
+  <Step title="Market Condition Testing">
+    ✅ Tested in both bull and bear markets  
+    ✅ Includes periods of high volatility  
+    ✅ Includes periods of low volatility  
+    ✅ Recent performance (last 3 months) is positive
+  </Step>
+  
+  <Step title="Strategy Logic">
+    ✅ Entry signals make logical sense  
+    ✅ Exit reasons are diverse (not all stop-loss)  
+    ✅ No obvious overfitting to historical data  
+    ✅ Strategy performs on out-of-sample data
+  </Step>
+</Steps>
+
+<Warning>
+If your strategy fails ANY of these checks, do NOT deploy it to live trading. Return to strategy development and optimization.
+</Warning>
+
+---
+
+## AI-Assisted Backtest Analysis
+
+Use natural language to analyze your backtest results through the MCP server:
+
+<CodeGroup>
+
+```plaintext Claude Desktop
+You: Can you analyze backtest bt_xyz789 and tell me if this strategy is ready for live trading?
+
+AI: I'll analyze the backtest results for you.
+
+*[Fetches backtest results via MCP]*
+
+Based on backtest bt_xyz789 for your VWAP_MACD strategy:
+
+**Performance Summary:**
+✅ Total Profit: $2,847.50 (28.48% ROI)
+✅ Win Rate: 65.5% (156 wins, 82 losses)
+⚠️  Max Drawdown: 8.7% ($870)
+✅ Sharpe Ratio: 1.85 (good risk-adjusted returns)
+✅ Profit Factor: 1.92 (healthy profit/loss ratio)
+
+**Key Findings:**
+1. Strong profitability across 238 trades over 21 months
+2. BTC/USDT performed best (68.4% win rate, $1,420 profit)
+3. Consistent monthly performance except March 2023 (-1.25%)
+4. Average holding time of 4h 32m suits the strategy
+
+**Concerns:**
+⚠️  March 2023 showed negative returns during market downturn
+⚠️  ETH/USDT win rate (63.2%) is lower than BTC/USDT
+
+**Recommendation:**
+✅ Strategy is READY for paper trading
+⚠️  Recommend starting with smaller position sizes
+⚠️  Monitor performance during high volatility periods
+⚠️  Consider adding protection for March-like conditions
+
+Would you like me to run a hyperopt to optimize the parameters further?
+```
+
+```plaintext Windsurf / Cursor
+You: What were the worst performing months in backtest bt_xyz789?
+
+AI: Looking at the monthly breakdown for backtest bt_xyz789:
+
+**Worst Performing Months:**
+1. 🔴 March 2023: -$125.30 (-1.25%), 48.4% win rate, 31 trades
+2. 🟡 June 2023: $45.20 (0.45%), 52.1% win rate, 19 trades
+3. 🟡 September 2023: $78.90 (0.79%), 53.8% win rate, 22 trades
+
+**Best Performing Months:**
+1. 🟢 January 2024: $485.30 (4.85%), 75.0% win rate, 32 trades
+2. 🟢 July 2023: $420.80 (4.21%), 71.4% win rate, 28 trades
+3. 🟢 November 2023: $395.60 (3.96%), 69.2% win rate, 26 trades
+
+**Insights:**
+- March 2023 coincided with banking crisis and high volatility
+- Low win rate months (<55%) correlate with choppy sideways markets
+- Best months had both high win rates AND high trade counts
+
+**Recommendations:**
+1. Add volatility filters to reduce trades during uncertain periods
+2. Consider market regime detection (trending vs. ranging)
+3. Implement tighter stop-losses during low-conviction setups
+
+Would you like me to analyze the individual trades from March 2023 to identify the pattern?
+```
+
+```plaintext MCP Query
+You: Compare the performance of BTC/USDT vs ETH/USDT in this backtest
+
+AI: Here's the comparison between BTC/USDT and ETH/USDT performance:
+
+**BTC/USDT:**
+- Total Profit: $1,420.50 (14.21%)
+- Trades: 95
+- Win Rate: 68.4%
+- Avg Duration: 5h 10m
+- Best Trade: $245.80
+- Worst Trade: -$78.30
+
+**ETH/USDT:**
+- Total Profit: $980.30 (9.80%)
+- Trades: 87
+- Win Rate: 63.2%
+- Avg Duration: 4h 05m
+- Best Trade: $198.40
+- Worst Trade: -$98.40
+
+**Key Differences:**
+📊 BTC/USDT outperformed by 4.41% absolute profit
+📊 BTC/USDT has 5.2% higher win rate
+📊 BTC/USDT trades held 1h 5m longer on average
+⚠️  ETH/USDT had the worst single trade (-$98.40)
+
+**Recommendation:**
+Consider allocating more capital to BTC/USDT or tightening ETH/USDT stop-losses. The longer hold time on BTC suggests better trend-following opportunities.
+```
+
+</CodeGroup>
+
+---
+
+## Common Backtest Pitfalls
+
+### ❌ Overfitting
+
+**Problem**: Strategy performs amazingly in backtest but fails in live trading.
+
+**Cause**: Parameters are too specifically tuned to historical data.
+
+**Solution**:
+- Use out-of-sample testing (e.g., train on 2023, validate on 2024)
+- Avoid excessive parameter optimization
+- Test on multiple market conditions
+- Keep strategy logic simple
+
+### ❌ Look-Ahead Bias
+
+**Problem**: Strategy "knows" future prices it shouldn't have access to.
+
+**Cause**: Indicators using future data or incorrect data alignment.
+
+**Solution**:
+- YouTrade automatically prevents look-ahead bias
+- Verify indicators calculate correctly
+- Check entry/exit logic doesn't peek into future
+
+### ❌ Insufficient Data
+
+**Problem**: Strategy tested on too short a time period or too few trades.
+
+**Cause**: Using only a few weeks/months of data.
+
+**Solution**:
+- Test minimum 6-12 months of data
+- Ensure at least 100 trades executed
+- Include different market conditions (bull, bear, sideways)
+
+### ❌ Ignoring Trading Costs
+
+**Problem**: Backtest shows profit, but fees and slippage eat all returns.
+
+**Cause**: Not accounting for realistic fees (exchange, network, slippage).
+
+**Solution**:
+- Always include trading fees (default 0.1%)
+- Add slippage for large orders
+- Account for spread on limit orders
+
+### ❌ Survivorship Bias
+
+**Problem**: Testing only on assets that still exist today.
+
+**Cause**: Delisted or failed projects not included in backtest data.
+
+**Solution**:
+- YouTrade includes delisted pairs where available
+- Test on multiple pairs to reduce single-asset dependency
+- Be aware historical data may be cleaner than live data
+
+---
+
+## Walk-Forward Validation
+
+The gold standard for strategy validation is walk-forward analysis:
+
+<Steps>
+  <Step title="Split Data into Segments">
+    Divide your historical data into training and testing periods:
+    
+    ```
+    Train 1: Jan-Jun 2023 → Test 1: Jul-Sep 2023
+    Train 2: Apr-Sep 2023 → Test 2: Oct-Dec 2023
+    Train 3: Jul-Dec 2023 → Test 3: Jan-Mar 2024
+    ```
+  </Step>
+  
+  <Step title="Optimize on Training Period">
+    Run hyperopt on the training period to find best parameters:
+    
+    ```python
+    # Optimize on Jan-Jun 2023
+    hyperopt_result = optimize_strategy(
+        strategy_id="strat_vwap_macd_001",
+        timerange="20230101-20230630"
+    )
+    ```
+  </Step>
+  
+  <Step title="Validate on Test Period">
+    Test the optimized parameters on the following unseen period:
+    
+    ```python
+    # Test on Jul-Sep 2023 with optimized params
+    backtest_result = run_backtest(
+        strategy_id="strat_vwap_macd_001",
+        params=hyperopt_result['best_params'],
+        timerange="20230701-20230930"
+    )
+    ```
+  </Step>
+  
+  <Step title="Repeat and Aggregate">
+    Repeat for each segment and aggregate results. If the strategy performs consistently across all test periods, it's likely robust.
+  </Step>
+</Steps>
+
+<CodeGroup>
+
+```python Walk-Forward Example
+import requests
+
+def walk_forward_validation(strategy_id, periods):
+    results = []
+    
+    for train_period, test_period in periods:
+        # Step 1: Optimize on training period
+        print(f"Optimizing on {train_period}...")
+        hyperopt_response = requests.post(
+            "https://api.youtrade.ai/api/v1/hyperopt/run",
+            headers={"Authorization": "Bearer YOUR_API_KEY"},
+            json={
+                "strategy_id": strategy_id,
+                "timerange": train_period,
+                "max_epochs": 100
+            }
+        )
+        best_params = hyperopt_response.json()['best_params']
+        
+        # Step 2: Test on validation period
+        print(f"Testing on {test_period}...")
+        backtest_response = requests.post(
+            "https://api.youtrade.ai/api/v1/backtest/run",
+            headers={"Authorization": "Bearer YOUR_API_KEY"},
+            json={
+                "strategy_id": strategy_id,
+                "timerange": test_period,
+                "params_override": best_params
+            }
+        )
+        
+        backtest_id = backtest_response.json()['backtest_id']
+        
+        # Wait for completion
+        # ... (status checking code) ...
+        
+        # Get results
+        result = requests.get(
+            f"https://api.youtrade.ai/api/v1/backtest/{backtest_id}/results",
+            headers={"Authorization": "Bearer YOUR_API_KEY"}
+        ).json()
+        
+        results.append({
+            'test_period': test_period,
+            'roi': result['summary']['roi_percent'],
+            'win_rate': result['summary']['win_rate'],
+            'max_drawdown': result['summary']['max_drawdown']
+        })
+    
+    # Aggregate results
+    avg_roi = sum(r['roi'] for r in results) / len(results)
+    avg_win_rate = sum(r['win_rate'] for r in results) / len(results)
+    max_drawdown = max(r['max_drawdown'] for r in results)
+    
+    print(f"\nWalk-Forward Results:")
+    print(f"Average ROI: {avg_roi:.2f}%")
+    print(f"Average Win Rate: {avg_win_rate:.1f}%")
+    print(f"Max Drawdown: {max_drawdown:.1f}%")
+    
+    return results
+
+# Define periods
+periods = [
+    ("20230101-20230630", "20230701-20230930"),
+    ("20230401-20230930", "20231001-20231231"),
+    ("20230701-20231231", "20240101-20240331"),
+    ("20231001-20240331", "20240401-20240630")
+]
+
+results = walk_forward_validation("strat_vwap_macd_001", periods)
+```
+
+</CodeGroup>
+
+---
+
+## Strategy Comparison
+
+Compare multiple strategies or parameter sets side-by-side:
+
+<CodeGroup>
+
+```bash Bash
+curl -X POST https://api.youtrade.ai/api/v1/backtest/compare \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "backtest_ids": ["bt_xyz789", "bt_abc123", "bt_def456"],
+    "metrics": ["roi_percent", "win_rate", "max_drawdown", "sharpe_ratio"]
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.youtrade.ai/api/v1/backtest/compare",
+    headers={
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json"
+    },
+    json={
+        "backtest_ids": ["bt_xyz789", "bt_abc123", "bt_def456"],
+        "metrics": ["roi_percent", "win_rate", "max_drawdown", "sharpe_ratio"]
+    }
+)
+
+comparison = response.json()
+
+# Display comparison table
+print("\nStrategy Comparison:")
+print(f"{'Metric':<20} {'BT 1':>12} {'BT 2':>12} {'BT 3':>12}")
+print("-" * 60)
+for metric, values in comparison['comparison'].items():
+    print(f"{metric:<20} {values[0]:>12.2f} {values[1]:>12.2f} {values[2]:>12.2f}")
+```
+
+</CodeGroup>
+
+### Comparison Result
+
+```json
+{
+  "comparison": {
+    "roi_percent": [28.48, 15.32, 42.67],
+    "win_rate": [65.5, 58.3, 71.2],
+    "max_drawdown": [8.7, 12.4, 6.3],
+    "sharpe_ratio": [1.85, 1.42, 2.31]
+  },
+  "winner": {
+    "best_roi": "bt_def456",
+    "best_win_rate": "bt_def456",
+    "lowest_drawdown": "bt_def456",
+    "best_sharpe": "bt_def456"
+  },
+  "recommendation": "bt_def456 outperforms across all key metrics"
+}
+```
+
+---
+
+## Exporting Backtest Data
+
+Export detailed trade data for external analysis:
+
+<CodeGroup>
+
+```bash Bash (CSV)
+curl -X GET https://api.youtrade.ai/api/v1/backtest/bt_xyz789/export?format=csv \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -o backtest_results.csv
+```
+
+```bash Bash (JSON)
+curl -X GET https://api.youtrade.ai/api/v1/backtest/bt_xyz789/export?format=json \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -o backtest_results.json
+```
+
+```python Python
+import requests
+import pandas as pd
+
+# Export to CSV
+response = requests.get(
+    "https://api.youtrade.ai/api/v1/backtest/bt_xyz789/export?format=csv",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+# Save to file
+with open("backtest_results.csv", "w") as f:
+    f.write(response.text)
+
+# Load into pandas for analysis
+df = pd.read_csv("backtest_results.csv")
+
+# Analyze in Python
+print(f"Total trades: {len(df)}")
+print(f"Profitable trades: {(df['profit_abs'] > 0).sum()}")
+print(f"\nTop 5 trades:")
+print(df.nlargest(5, 'profit_abs')[['pair', 'profit_abs', 'profit_percent']])
+```
+
+</CodeGroup>
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="1. Always Test Multiple Time Periods" icon="calendar">
+    Don't rely on a single backtest. Test:
+    - Different time periods (2023 vs 2024)
+    - Different market conditions (bull, bear, sideways)
+    - Different volatility regimes (calm vs turbulent)
+    
+    A robust strategy should perform reasonably well across all conditions.
+  </Accordion>
+  
+  <Accordion title="2. Use Realistic Parameters" icon="sliders">
+    Configure your backtest to match real-world conditions:
+    - Actual exchange fees (usually 0.1% per trade)
+    - Realistic starting balance
+    - Appropriate max open trades for your capital
+    - Slippage for market orders
+    
+    Overly optimistic settings will give false confidence.
+  </Accordion>
+  
+  <Accordion title="3. Validate with Paper Trading" icon="flask">
+    Even after successful backtests:
+    1. Run strategy in paper trading mode for 1-2 weeks
+    2. Monitor live performance vs backtest expectations
+    3. Check for execution issues, API latency, etc.
+    4. Only then proceed to live trading with small capital
+  </Accordion>
+  
+  <Accordion title="4. Document Everything" icon="book">
+    Keep detailed records:
+    - Backtest IDs and configurations
+    - Parameter changes and why you made them
+    - Performance metrics for each version
+    - Reasons for rejecting or accepting strategies
+    
+    This creates an audit trail and prevents repeating mistakes.
+  </Accordion>
+  
+  <Accordion title="5. Be Skeptical of Perfect Results" icon="triangle-exclamation">
+    If a backtest shows:
+    - >100% ROI with <5% drawdown
+    - >80% win rate
+    - Consistent profit every single month
+    
+    **It's probably overfitted or has a bug.** Real strategies have rough patches.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Troubleshooting
+
+### Backtest Taking Too Long
+
+**Problem**: Backtest has been running for >10 minutes
+
+**Solutions**:
+- Reduce timerange (test smaller date range first)
+- Reduce number of pairs (test 1-2 pairs initially)
+- Use larger timeframe (5m → 15m or 1h)
+- Check strategy for infinite loops or heavy computations
+
+### No Trades Generated
+
+**Problem**: Backtest completes but shows 0 trades
+
+**Solutions**:
+- Check strategy entry conditions aren't too restrictive
+- Verify timerange has market data available
+- Ensure pairs are correctly formatted (BTC/USDT not BTCUSDT)
+- Review indicator calculations for errors
+
+### Unrealistic Results
+
+**Problem**: Backtest shows 1000%+ returns or impossible metrics
+
+**Solutions**:
+- Check for look-ahead bias in indicators
+- Verify stake amounts are reasonable
+- Review order execution logic
+- Test on different time periods to confirm
+
+### Different Results on Re-run
+
+**Problem**: Same backtest with same parameters gives different results
+
+**Solutions**:
+- Check if strategy uses randomness (should be seeded)
+- Verify data hasn't been updated (use specific data version)
+- Ensure no time-dependent logic (e.g., checking current date)
+- Contact support if issue persists
+
+---
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="How much historical data do I need?" icon="question">
+    **Minimum**: 6 months  
+    **Recommended**: 12-24 months  
+    **Ideal**: 2+ years including different market cycles
+    
+    More data = more confidence in results, but recent data is more relevant.
+  </Accordion>
+  
+  <Accordion title="Should I backtest on all available pairs?" icon="question">
+    No. Start with 2-3 major pairs (BTC/USDT, ETH/USDT) for initial testing. Once validated, expand to more pairs. Testing on too many pairs simultaneously increases computation time and can hide pair-specific issues.
+  </Accordion>
+  
+  <Accordion title="What's a good Sharpe ratio?" icon="question">
+    - **<0.5**: Poor risk-adjusted returns
+    - **0.5-1.0**: Acceptable for high-risk strategies
+    - **1.0-2.0**: Good risk-adjusted returns
+    - **>2.0**: Excellent (verify it's not overfitted)
+    
+    For crypto, >1.0 is considered good due to high volatility.
+  </Accordion>
+  
+  <Accordion title="Can I backtest futures/margin trading?" icon="question">
+    Yes! Add the `trading_mode` and `margin_mode` parameters:
+    
+    ```json
+    {
+      "strategy_id": "strat_abc",
+      "trading_mode": "futures",
+      "margin_mode": "isolated",
+      "leverage": 3,
+      "timerange": "20240101-20241001"
+    }
+    ```
+    
+    Be aware leverage amplifies both gains and losses in backtests.
+  </Accordion>
+  
+  <Accordion title="How often should I re-backtest?" icon="question">
+    - **Before deployment**: Always backtest latest version
+    - **Monthly**: Re-test live strategies on recent data
+    - **After market regime change**: Test strategy still works in new conditions
+    - **After modifications**: Any parameter change requires re-testing
+  </Accordion>
+  
+  <Accordion title="What if my backtest shows losses?" icon="question">
+    This is actually useful feedback! A losing backtest shows:
+    1. Strategy logic may be flawed
+    2. Parameters need optimization
+    3. Strategy doesn't work in these market conditions
+    
+    **Never deploy a losing strategy hoping "live will be different."**
+    
+    Instead:
+    - Review entry/exit logic
+    - Run hyperopt to find better parameters
+    - Test on different timeframes or pairs
+    - Consider pivoting to a different strategy approach
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+After successfully backtesting your strategy:
+
+<CardGroup cols={2}>
+  <Card title="Optimize Parameters" icon="sliders" href="/youtrade-api/guides/hyperopt-optimization">
+    Fine-tune your strategy settings with hyperparameter optimization
+  </Card>
+  
+  <Card title="Deploy to Paper Trading" icon="flask" href="/youtrade-api/guides/paper-trading">
+    Test your strategy with live market data but virtual money
+  </Card>
+  
+  <Card title="Monitor Performance" icon="chart-line" href="/youtrade-api/guides/pull-data-reports">
+    Track your strategy's ongoing performance with analytics
+  </Card>
+  
+  <Card title="Go Live" icon="rocket" href="/youtrade-api/guides/live-deployment">
+    Deploy your validated strategy to live trading
+  </Card>
+</CardGroup>
+
+---
+
+## Related Resources
+
+- [Using YouTrade API](/youtrade-api/guides/using-api) - Authentication and basic API usage
+- [Create from Existing Strategy](/youtrade-api/guides/create-from-existing) - Clone and modify strategies
+- [Pull Data Reports](/youtrade-api/guides/pull-data-reports) - Analyze backtest and live trading data
+- [Generate Strategy over MCP](/youtrade-api/guides/mcp-generation) - AI-assisted strategy creation
+
+<Note>
+**Need Help?** Join our [Discord community](https://discord.gg/youtrade) or contact support at [support@youtrade.ai](mailto:support@youtrade.ai)
+</Note>

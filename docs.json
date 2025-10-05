@@ -83,6 +83,7 @@
               "youtrade-api/guides/create-from-existing",
               "youtrade-api/guides/upload-zip",
               "youtrade-api/guides/mcp-generation",
+              "youtrade-api/guides/backtesting-validation",
               "youtrade-api/guides/pull-data-reports"
             ]
           }
